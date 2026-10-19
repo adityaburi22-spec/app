@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B132B"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_stat" />
+
+            <TextView
+                android:id="@+id/tvOemHeader"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="OEM Anti-Kill Setup"
+                android:textColor="#F8FAFC"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Explainer Card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvDetectedBrand"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Device Detected: Vivo (Funtouch / OriginOS)"
+                android:textColor="#38BDF8"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Chinese OEM skins (Vivo, Xiaomi, Oppo, Realme, Samsung) aggressively terminate background accessibility and foreground services unless specifically configured. Follow these 3 quick steps to keep FeedTrainer 100% active."
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+
+        <!-- Step 1: Battery Optimization Exemption -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Step 1: Disable Battery Optimization"
+                android:textColor="#F8FAFC"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvBatteryStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Status: Checking..."
+                android:textColor="#F59E0B"
+                android:textSize="12sp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="10dp"
+                android:text="Allows FeedTrainer to run without Android Doze killing the event monitor when your screen is on."
+                android:textColor="#94A3B8"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGrantBattery"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="Grant Battery Exemption"
+                android:textSize="13sp"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#10B981"
+                app:cornerRadius="10dp" />
+        </LinearLayout>
+
+        <!-- Step 2: OEM Autostart & Background Power Management -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Step 2: Enable Autostart &amp; High Background Power"
+                android:textColor="#F8FAFC"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvOemInstructions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="12dp"
+                android:text="1. Open Autostart settings\n2. Turn ON FeedTrainer\n3. Allow background activity"
+                android:textColor="#E2E8F0"
+                android:textSize="12sp"
+                android:lineSpacingExtra="4dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenAutostart"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="Open Device Autostart Settings"
+                android:textSize="13sp"
+                android:textColor="#FFFFFF"
+                app:backgroundTint="#3B82F6"
+                app:cornerRadius="10dp" />
+        </LinearLayout>
+
+        <!-- Step 3: Lock App in Recents -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="16dp"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Step 3: Lock FeedTrainer in Recent Apps"
+                android:textColor="#F8FAFC"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Open your phone's Recent Apps / Task Switcher screen, locate FeedTrainer, and tap the Padlock icon (or swipe down on the card) to prevent the cleaner from sweeping it."
+                android:textColor="#94A3B8"
+                android:textSize="12sp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+
+        <!-- Done Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDoneOem"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Done &amp; Return to Dashboard"
+            android:textSize="14sp"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#059669"
+            app:cornerRadius="12dp" />
+
+    </LinearLayout>
+</ScrollView>

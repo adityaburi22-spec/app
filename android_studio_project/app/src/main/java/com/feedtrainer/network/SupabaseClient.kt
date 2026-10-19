@@ -1,0 +1,192 @@
+package com.feedtrainer.network
+
+import android.util.Log
+import com.feedtrainer.model.UserSession
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.concurrent.TimeUnit
+
+object SupabaseClient {
+
+    private const val TAG = "SupabaseClient"
+    const val BASE_URL = "https://ddsvhkhbxlochsrmntwa.supabase.co"
+    const val PUBLISHABLE_KEY = "sb_publishable_o5uvYyciKmlcjrd0655SMA_9WNyurlT"
+
+    private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+    private val gson = Gson()
+
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .build()
+
+    sealed class AuthResult {
+        data class Success(val session: UserSession) : AuthResult()
+        data class Error(val message: String) : AuthResult()
+    }
+
+    suspend fun signUp(email: String, pass: String, fullName: String): AuthResult = withContext(Dispatchers.IO) {
+        try {
+            val payload = JsonObject().apply {
+                addProperty("email", email)
+                addProperty("password", pass)
+                val meta = JsonObject().apply {
+                    addProperty("full_name", fullName)
+                }
+                add("data", meta)
+            }
+
+            val request = Request.Builder()
+                .url("$BASE_URL/auth/v1/signup")
+                .header("apikey", PUBLISHABLE_KEY)
+                .header("Content-Type", "application/json")
+                .post(payload.toString().toRequestBody(jsonMediaType))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val bodyStr = response.body?.string() ?: ""
+                if (response.isSuccessful) {
+                    val root = gson.fromJson(bodyStr, JsonObject::class.java)
+                    val userId = root.get("id")?.asString ?: ""
+                    val userEmail = root.get("email")?.asString ?: email
+                    val token = root.get("access_token")?.asString ?: ""
+                    AuthResult.Success(
+                        UserSession(
+                            userId = userId,
+                            email = userEmail,
+                            accessToken = token,
+                            fullName = fullName
+                        )
+                    )
+                } else {
+                    val msg = parseErrorMessage(bodyStr, response.code)
+                    AuthResult.Error(msg)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Sign up error", e)
+            AuthResult.Error(e.localizedMessage ?: "Network connection error")
+        }
+    }
+
+    suspend fun signIn(email: String, pass: String): AuthResult = withContext(Dispatchers.IO) {
+        try {
+            val payload = JsonObject().apply {
+                addProperty("email", email)
+                addProperty("password", pass)
+            }
+
+            val request = Request.Builder()
+                .url("$BASE_URL/auth/v1/token?grant_type=password")
+                .header("apikey", PUBLISHABLE_KEY)
+                .header("Content-Type", "application/json")
+                .post(payload.toString().toRequestBody(jsonMediaType))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                val bodyStr = response.body?.string() ?: ""
+                if (response.isSuccessful) {
+                    val root = gson.fromJson(bodyStr, JsonObject::class.java)
+                    val accessToken = root.get("access_token")?.asString ?: ""
+                    val userObj = root.getAsJsonObject("user")
+                    val userId = userObj?.get("id")?.asString ?: ""
+                    val userEmail = userObj?.get("email")?.asString ?: email
+                    val userMeta = userObj?.getAsJsonObject("user_metadata")
+                    val fullName = userMeta?.get("full_name")?.asString
+
+                    AuthResult.Success(
+                        UserSession(
+                            userId = userId,
+                            email = userEmail,
+                            accessToken = accessToken,
+                            fullName = fullName
+                        )
+                    )
+                } else {
+                    val msg = parseErrorMessage(bodyStr, response.code)
+                    AuthResult.Error(msg)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Sign in error", e)
+            AuthResult.Error(e.localizedMessage ?: "Network connection error")
+        }
+    }
+
+    suspend fun syncUserGoals(accessToken: String, goals: List<String>): Boolean = withContext(Dispatchers.IO) {
+        if (accessToken.isBlank()) return@withContext false
+        try {
+            val meta = JsonObject().apply {
+                val array = com.google.gson.JsonArray()
+                goals.forEach { array.add(it) }
+                add("goals", array)
+                addProperty("last_synced_at", System.currentTimeMillis())
+            }
+            val payload = JsonObject().apply {
+                add("data", meta)
+            }
+
+            val request = Request.Builder()
+                .url("$BASE_URL/auth/v1/user")
+                .header("apikey", PUBLISHABLE_KEY)
+                .header("Authorization", "Bearer $accessToken")
+                .header("Content-Type", "application/json")
+                .put(payload.toString().toRequestBody(jsonMediaType))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                response.isSuccessful
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Sync goals error", e)
+            false
+        }
+    }
+
+    suspend fun checkSubscriptionStatus(userId: String, accessToken: String): Pair<Boolean, String?> = withContext(Dispatchers.IO) {
+        if (userId.isBlank()) return@withContext Pair(false, null)
+        try {
+            val authHeader = if (accessToken.isNotBlank()) "Bearer $accessToken" else "Bearer $PUBLISHABLE_KEY"
+            val request = Request.Builder()
+                .url("$BASE_URL/rest/v1/subscriptions?user_id=eq.$userId&status=eq.active&select=*")
+                .header("apikey", PUBLISHABLE_KEY)
+                .header("Authorization", authHeader)
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: "[]"
+                    val array = gson.fromJson(body, com.google.gson.JsonArray::class.java)
+                    if (array != null && array.size() > 0) {
+                        val sub = array.get(0).asJsonObject
+                        val plan = sub.get("plan")?.asString ?: "active"
+                        return@withContext Pair(true, plan)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Subscription check error: ${e.message}")
+        }
+        Pair(false, null)
+    }
+
+    private fun parseErrorMessage(body: String, code: Int): String {
+        return try {
+            val json = gson.fromJson(body, JsonObject::class.java)
+            json.get("msg")?.asString
+                ?: json.get("error_description")?.asString
+                ?: json.get("message")?.asString
+                ?: "Server returned code $code"
+        } catch (e: Exception) {
+            "Request failed (HTTP $code)"
+        }
+    }
+}

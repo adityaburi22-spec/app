@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">FeedTrainer</string>
+    <string name="accessibility_description">FeedTrainer analyzes visible reel and shorts captions to mindfully curate and steer your recommendation feed toward your educational and life goals.</string>
+    <string name="notification_channel_name">FeedTrainer Active Service</string>
+    <string name="notification_channel_desc">Keeps FeedTrainer active to monitor and steer feeds</string>
+    <string name="service_active_title">FeedTrainer Active</string>
+    <string name="service_active_desc">Curating your feed toward your goals in the background</string>
+</resources>
