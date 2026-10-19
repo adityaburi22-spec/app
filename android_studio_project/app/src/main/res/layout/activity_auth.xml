@@ -14,9 +14,9 @@
         android:gravity="center">
 
         <ImageView
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/ic_stat"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/feedtrainer_logo"
             android:layout_marginBottom="16dp" />
 
         <TextView
