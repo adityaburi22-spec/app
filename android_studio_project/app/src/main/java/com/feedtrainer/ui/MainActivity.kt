@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnRunTest: MaterialButton
     private lateinit var tvTestResult: TextView
 
+    private lateinit var layoutEmptyLogs: LinearLayout
     private lateinit var tvEmptyLogs: TextView
     private lateinit var containerLogs: LinearLayout
 
@@ -97,6 +98,7 @@ class MainActivity : AppCompatActivity() {
         btnRunTest = findViewById(R.id.btnRunTest)
         tvTestResult = findViewById(R.id.tvTestResult)
 
+        layoutEmptyLogs = findViewById(R.id.layoutEmptyLogs)
         tvEmptyLogs = findViewById(R.id.tvEmptyLogs)
         containerLogs = findViewById(R.id.containerLogs)
     }
@@ -195,10 +197,10 @@ class MainActivity : AppCompatActivity() {
         val logs = prefs.getActivityLogs()
 
         if (logs.isEmpty()) {
-            tvEmptyLogs.visibility = View.VISIBLE
+            layoutEmptyLogs.visibility = View.VISIBLE
             containerLogs.visibility = View.GONE
         } else {
-            tvEmptyLogs.visibility = View.GONE
+            layoutEmptyLogs.visibility = View.GONE
             containerLogs.visibility = View.VISIBLE
 
             val inflater = LayoutInflater.from(this)
@@ -220,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                 if (log.action == "LIKED") {
                     tvActionBadge.setTextColor(getColor(R.color.status_green))
                     tvGoalTag.visibility = View.VISIBLE
-                    tvGoalTag.text = "🎯 Matched: ${log.matchedGoal ?: "Goal"}"
+                    tvGoalTag.text = "🎯 ${log.matchedGoal ?: "Goal"}"
                 } else {
                     tvActionBadge.setTextColor(getColor(R.color.text_muted))
                     tvGoalTag.visibility = View.GONE

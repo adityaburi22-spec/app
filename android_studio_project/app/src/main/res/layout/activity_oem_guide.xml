@@ -3,189 +3,331 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0B132B"
+    android:background="#0B1120"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingBottom="32dp">
 
+        <!-- Header Bar -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="12dp">
 
-            <ImageView
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:src="@drawable/ic_stat" />
-
-            <TextView
-                android:id="@+id/tvOemHeader"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="10dp"
-                android:text="OEM Anti-Kill Setup"
-                android:textColor="#F8FAFC"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Battery Shield"
+                    android:textColor="#F1F5F9"
+                    android:textSize="20sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Keep FeedTrainer always running"
+                    android:textColor="#4B6580"
+                    android:textSize="12sp"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@drawable/ic_stat"
+                android:background="@drawable/bg_stat_card"
+                android:padding="8dp"
+                android:scaleType="fitCenter" />
         </LinearLayout>
 
-        <!-- Explainer Card -->
-        <LinearLayout
+        <!-- Device detected banner -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="16dp"
-            android:layout_marginBottom="16dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#0C1A3D">
 
-            <TextView
-                android:id="@+id/tvDetectedBrand"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Device Detected: Vivo (Funtouch / OriginOS)"
-                android:textColor="#38BDF8"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Chinese OEM skins (Vivo, Xiaomi, Oppo, Realme, Samsung) aggressively terminate background accessibility and foreground services unless specifically configured. Follow these 3 quick steps to keep FeedTrainer 100% active."
-                android:textColor="#94A3B8"
-                android:textSize="12sp"
-                android:lineSpacingExtra="3dp" />
-        </LinearLayout>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="16dp">
 
-        <!-- Step 1: Battery Optimization Exemption -->
-        <LinearLayout
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📱"
+                    android:textSize="20sp"
+                    android:layout_marginEnd="10dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvDetectedBrand"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Device Detected"
+                        android:textColor="#38BDF8"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Follow the steps below to prevent your phone from killing FeedTrainer in the background"
+                        android:textColor="#3A5070"
+                        android:textSize="11sp"
+                        android:layout_marginTop="3dp"
+                        android:lineSpacingExtra="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Step 1 Card -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="16dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#141E30">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Step 1: Disable Battery Optimization"
-                android:textColor="#F8FAFC"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvBatteryStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Status: Checking..."
-                android:textColor="#F59E0B"
-                android:textSize="12sp" />
-
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="10dp"
-                android:text="Allows FeedTrainer to run without Android Doze killing the event monitor when your screen is on."
-                android:textColor="#94A3B8"
-                android:textSize="12sp" />
+                android:orientation="vertical"
+                android:padding="18dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnGrantBattery"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:text="Grant Battery Exemption"
-                android:textSize="13sp"
-                android:textColor="#FFFFFF"
-                app:backgroundTint="#10B981"
-                app:cornerRadius="10dp" />
-        </LinearLayout>
+                <!-- Step header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
 
-        <!-- Step 2: OEM Autostart & Background Power Management -->
-        <LinearLayout
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:text="1"
+                        android:textColor="#0B1120"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_green"
+                        android:layout_marginEnd="12dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Disable Battery Optimization"
+                            android:textColor="#F1F5F9"
+                            android:textSize="14sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:id="@+id/tvBatteryStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Status: Checking..."
+                            android:textColor="#F59E0B"
+                            android:textSize="11sp"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Allows FeedTrainer to monitor feeds without Android Doze killing it when the screen is on."
+                    android:textColor="#4B6580"
+                    android:textSize="12sp"
+                    android:lineSpacingExtra="2dp"
+                    android:layout_marginBottom="14dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGrantBattery"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:text="Grant Battery Exemption"
+                    android:textSize="13sp"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="sans-serif-medium"
+                    app:backgroundTint="#10B981"
+                    app:cornerRadius="23dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Step 2 Card -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="16dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="10dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#141E30">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Step 2: Enable Autostart &amp; High Background Power"
-                android:textColor="#F8FAFC"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvOemInstructions"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="12dp"
-                android:text="1. Open Autostart settings\n2. Turn ON FeedTrainer\n3. Allow background activity"
-                android:textColor="#E2E8F0"
-                android:textSize="12sp"
-                android:lineSpacingExtra="4dp" />
+                android:orientation="vertical"
+                android:padding="18dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnOpenAutostart"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:text="Open Device Autostart Settings"
-                android:textSize="13sp"
-                android:textColor="#FFFFFF"
-                app:backgroundTint="#3B82F6"
-                app:cornerRadius="10dp" />
-        </LinearLayout>
+                <!-- Step header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
 
-        <!-- Step 3: Lock App in Recents -->
-        <LinearLayout
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:text="2"
+                        android:textColor="#0B1120"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:background="@drawable/bg_pill_blue"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Enable Autostart &amp; Background Power"
+                        android:textColor="#F1F5F9"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvOemInstructions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="1. Open Autostart settings\n2. Turn ON FeedTrainer\n3. Allow background activity"
+                    android:textColor="#4B6580"
+                    android:textSize="12sp"
+                    android:lineSpacingExtra="3dp"
+                    android:layout_marginBottom="14dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenAutostart"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:text="Open Autostart Settings"
+                    android:textSize="13sp"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="sans-serif-medium"
+                    app:backgroundTint="#3B82F6"
+                    app:cornerRadius="23dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Step 3 Card -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="16dp"
-            android:layout_marginBottom="20dp">
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#141E30">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Step 3: Lock FeedTrainer in Recent Apps"
-                android:textColor="#F8FAFC"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Open your phone's Recent Apps / Task Switcher screen, locate FeedTrainer, and tap the Padlock icon (or swipe down on the card) to prevent the cleaner from sweeping it."
-                android:textColor="#94A3B8"
-                android:textSize="12sp"
-                android:lineSpacingExtra="3dp" />
-        </LinearLayout>
+                android:orientation="vertical"
+                android:padding="18dp">
 
-        <!-- Done Button -->
+                <!-- Step header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
+
+                    <TextView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:text="3"
+                        android:textColor="#0B1120"
+                        android:textSize="13sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:gravity="center"
+                        android:background="@drawable/bg_chip"
+                        android:layout_marginEnd="12dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Lock App in Recent Apps"
+                        android:textColor="#F1F5F9"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Open Recent Apps, locate FeedTrainer, and tap the Padlock icon (or swipe down on the card) to prevent the system cleaner from removing it."
+                    android:textColor="#4B6580"
+                    android:textSize="12sp"
+                    android:lineSpacingExtra="3dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Done button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDoneOem"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="Done &amp; Return to Dashboard"
+            android:layout_height="50dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:text="Done — Return to Dashboard"
             android:textSize="14sp"
             android:textColor="#FFFFFF"
-            app:backgroundTint="#059669"
-            app:cornerRadius="12dp" />
+            android:fontFamily="sans-serif-medium"
+            app:backgroundTint="#10B981"
+            app:cornerRadius="25dp" />
 
     </LinearLayout>
 </ScrollView>

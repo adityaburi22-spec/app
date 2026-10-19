@@ -20,8 +20,8 @@ object FeedBrain {
     private var activeGoals: List<String> = emptyList()
     private var goalVecs: Array<FloatArray> = emptyArray()
 
-    private const val LIKE_T = 0.35f
-    private const val NI_T = 0.15f
+    private const val LIKE_T = 0.45f
+    private const val NI_T = 0.20f
 
     @Volatile
     var isInitialized: Boolean = false
@@ -135,7 +135,27 @@ object FeedBrain {
         }
     }
 
+    // Words that immediately disqualify a reel regardless of embedding score.
+    // These are slang/entertainment signals with zero educational value.
+    private val HARD_BLOCK_TERMS = setOf(
+        "brainrot", "brain rot", "skibidi", "sigma", "rizz", "rizzler",
+        "ohio", "sussy", "slay queen", "no cap fr fr", "bussin",
+        "prank", "prank gone wrong", "social experiment", "exposed",
+        "drama", "gossip", "beef", "roast", "cringe", "cursed",
+        "tiktok dance", "viral dance", "challenge accepted",
+        "watch till end", "wait for it", "plot twist",
+        "100 layers", "mukbang", "asmr eating", "pov:",
+        "thirst trap", "body reveal", "hot girl", "hot guy",
+        "reaction", "fanboy", "stan", "celeb drama", "tea ☕"
+    )
+
     fun classify(reel: Reel, userGoals: List<String>): ClassificationResult {
+        // === HARD BLOCK: immediate NOT_INTERESTED for known brainrot ===
+        val captionLower = "${reel.username} ${reel.caption}".lowercase()
+        if (HARD_BLOCK_TERMS.any { captionLower.contains(it) }) {
+            return ClassificationResult("NOT_INTERESTED", 0.05f, null)
+        }
+
         if (!isInitialized || goalVecs.isEmpty()) {
             return MockLocalFilter.classify(reel, userGoals)
         }

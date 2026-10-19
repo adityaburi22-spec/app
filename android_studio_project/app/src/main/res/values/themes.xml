@@ -1,11 +1,14 @@
 <resources>
-    <!-- Base application theme. -->
+    <!-- Base application theme -->
     <style name="Theme.FeedTrainer" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorPrimaryContainer">@color/primary_container</item>
-        <item name="android:statusBarColor">@color/bg_dark</item>
+        <item name="colorSurface">@color/surface_dark</item>
+        <item name="colorSurfaceVariant">@color/surface_card</item>
+        <item name="android:statusBarColor">#0B1120</item>
         <item name="android:windowBackground">@color/bg_dark</item>
-        <item name="android:navigationBarColor">@color/bg_dark</item>
+        <item name="android:navigationBarColor">#0B1120</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

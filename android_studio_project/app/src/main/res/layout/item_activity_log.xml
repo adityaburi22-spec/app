@@ -1,70 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp"
+    android:orientation="horizontal"
     android:layout_marginBottom="8dp"
-    android:background="@drawable/bg_button_secondary">
+    android:background="@drawable/bg_input_field"
+    android:padding="12dp"
+    android:gravity="top">
 
+    <!-- Left accent -->
+    <View
+        android:layout_width="3dp"
+        android:layout_height="match_parent"
+        android:background="#10B981"
+        android:layout_marginEnd="12dp" />
+
+    <!-- Content -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvPlatform"
-            android:layout_width="wrap_content"
+        <!-- Top row: platform + user + badge -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Instagram"
-            android:textColor="#38BDF8"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="5dp">
+
+            <TextView
+                android:id="@+id/tvPlatform"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Instagram"
+                android:textColor="#38BDF8"
+                android:textSize="10sp"
+                android:letterSpacing="0.05"
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/bg_pill_blue"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:layout_marginEnd="8dp" />
+
+            <TextView
+                android:id="@+id/tvUsername"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@username"
+                android:textColor="#CBD5E1"
+                android:textSize="12sp"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/tvActionBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="LIKED"
+                android:textColor="#10B981"
+                android:textSize="9sp"
+                android:letterSpacing="0.05"
+                android:fontFamily="sans-serif-medium"
+                android:background="@drawable/bg_pill_green"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp" />
+        </LinearLayout>
+
+        <!-- Caption snippet -->
+        <TextView
+            android:id="@+id/tvCaptionSnippet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="How to build machine learning models in production..."
+            android:textColor="#4B6580"
             android:textSize="12sp"
-            android:textStyle="bold" />
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
+            android:layout_marginBottom="4dp" />
 
+        <!-- Matched goal tag -->
         <TextView
-            android:id="@+id/tvUsername"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:text="@username"
-            android:textColor="#E2E8F0"
-            android:textSize="13sp"
-            android:singleLine="true" />
-
-        <TextView
-            android:id="@+id/tvActionBadge"
+            android:id="@+id/tvGoalTag"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="LIKED"
-            android:textColor="#10B981"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp"
-            android:background="@drawable/bg_chip" />
+            android:text="🎯 Coding, AI &amp; Software"
+            android:textColor="#34D399"
+            android:textSize="11sp" />
+
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvCaptionSnippet"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="How to build machine learning models in production..."
-        android:textColor="#94A3B8"
-        android:textSize="12sp"
-        android:maxLines="2" />
-
-    <TextView
-        android:id="@+id/tvGoalTag"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="🎯 Matched: Coding, AI, and Software Engineering"
-        android:textColor="#34D399"
-        android:textSize="11sp" />
-
 </LinearLayout>
