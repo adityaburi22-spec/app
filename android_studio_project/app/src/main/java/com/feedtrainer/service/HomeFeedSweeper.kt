@@ -137,13 +137,13 @@ object HomeFeedSweeper {
                     delay(70) // Quick wait for popup menu attach
 
                     var freshRoot = svc.rootInActiveWindow
-                    var clickedNotInterested = if (freshRoot != null) clickNotInterestedMenuItem(freshRoot) else false
+                    var clickedNotInterested = if (freshRoot != null) clickNotInterestedMenuItem(svc, freshRoot) else false
 
                     if (!clickedNotInterested) {
-                        delay(50) // Micro fallback check
+                        delay(40) // Micro fallback check
                         freshRoot = svc.rootInActiveWindow
                         if (freshRoot != null) {
-                            clickedNotInterested = clickNotInterestedMenuItem(freshRoot)
+                            clickedNotInterested = clickNotInterestedMenuItem(svc, freshRoot)
                         }
                     }
 
@@ -198,17 +198,31 @@ object HomeFeedSweeper {
         return findByContentDescription(container, listOf("more options", "action menu", "more actions", "options", "menu", "overflow"))
     }
 
-    private fun clickNotInterestedMenuItem(root: AccessibilityNodeInfo): Boolean {
-        for (term in NOT_INTERESTED_TERMS) {
-            try {
-                val nodes = root.findAccessibilityNodeInfosByText(term)
-                val target = nodes.firstOrNull { it.isClickable || it.isEnabled }
-                if (target != null) {
-                    return target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+    private fun clickNotInterestedMenuItem(svc: AccessibilityService, root: AccessibilityNodeInfo): Boolean {
+        val candidateRoots = mutableListOf<AccessibilityNodeInfo>()
+        candidateRoots.add(root)
+        try {
+            for (window in svc.windows) {
+                val winRoot = window.root
+                if (winRoot != null && !candidateRoots.contains(winRoot)) {
+                    candidateRoots.add(winRoot)
                 }
-            } catch (_: Exception) {}
+            }
+        } catch (_: Exception) {}
+
+        for (candidate in candidateRoots) {
+            for (term in NOT_INTERESTED_TERMS) {
+                try {
+                    val nodes = candidate.findAccessibilityNodeInfosByText(term)
+                    val target = nodes.firstOrNull { it.isClickable || it.isEnabled }
+                    if (target != null) {
+                        return target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    }
+                } catch (_: Exception) {}
+            }
+            if (findAndClickByText(candidate, "not interest")) return true
         }
-        return findAndClickByText(root, "not interest")
+        return false
     }
 
     private fun findByContentDescription(node: AccessibilityNodeInfo, terms: List<String>): AccessibilityNodeInfo? {

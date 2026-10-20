@@ -44,6 +44,7 @@ object DopamineDimmer {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var overlayRoot: FrameLayout? = null
     private var windowManager: WindowManager? = null
+    private var tvPillStreak: TextView? = null
     private var currentDimAlpha = 0f
     private var dimAnimator: ValueAnimator? = null
 
@@ -69,6 +70,11 @@ object DopamineDimmer {
         } else {
             consecutiveBrainrotCount++
             Log.d(TAG, "Brainrot streak: $consecutiveBrainrotCount consecutive junk videos")
+
+            // Update streak text live if overlay is visible
+            mainHandler.post {
+                tvPillStreak?.text = " Dopamine Dimmer • Slop streak ($consecutiveBrainrotCount)"
+            }
 
             if (consecutiveBrainrotCount >= BRAINROT_THRESHOLD) {
                 // Trigger gentle haptic tick on 3rd consecutive junk video
@@ -146,7 +152,6 @@ object DopamineDimmer {
             windowManager = wm
 
             val root = FrameLayout(context).apply {
-                // Dark slate desaturating wash
                 setBackgroundColor(Color.parseColor("#B80B1120"))
                 alpha = 0f
             }
@@ -174,6 +179,8 @@ object DopamineDimmer {
                 setTextColor(Color.parseColor("#94A3B8"))
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
             }
+            tvPillStreak = tvText
+
             pillLayout.addView(tvIcon)
             pillLayout.addView(tvText)
 
@@ -213,13 +220,16 @@ object DopamineDimmer {
         }
     }
 
-    private fun dismissOverlay(context: Context) {
-        try {
-            val v = overlayRoot ?: return
-            windowManager?.removeView(v)
-        } catch (_: Exception) {}
-        overlayRoot = null
-        currentDimAlpha = 0f
+    fun dismissOverlay(context: Context) {
+        mainHandler.post {
+            try {
+                val v = overlayRoot ?: return@post
+                windowManager?.removeView(v)
+            } catch (_: Exception) {}
+            overlayRoot = null
+            tvPillStreak = null
+            currentDimAlpha = 0f
+        }
     }
 
     private fun triggerGentleHaptic(context: Context) {

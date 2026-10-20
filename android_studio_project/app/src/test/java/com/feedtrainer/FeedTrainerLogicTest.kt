@@ -354,4 +354,27 @@ class FeedTrainerLogicTest {
         assertEquals(64, metrics.shiftDeltaPercent)
         assertEquals(55, metrics.nicheBreakdown["Coding, AI, and Software Engineering"])
     }
+
+    @Test
+    fun testPurityPointCategoryIntegrity() {
+        val point1 = com.feedtrainer.model.FeedPurityPoint(
+            timestamp = 1700000000000L,
+            isHighSignal = true,
+            category = "Coding, AI, and Software Engineering"
+        )
+        assertEquals("Coding, AI, and Software Engineering", point1.category)
+
+        val point2 = com.feedtrainer.model.FeedPurityPoint(
+            timestamp = 1700000000000L,
+            isHighSignal = false
+        )
+        assertEquals("General", point2.category)
+    }
+
+    @Test
+    fun testNightstandCalibratorInitialState() {
+        org.junit.Assert.assertFalse(com.feedtrainer.service.NightstandCalibrator.isRunning)
+        assertEquals(0, com.feedtrainer.service.NightstandCalibrator.progressPercent)
+        assertEquals("Idle", com.feedtrainer.service.NightstandCalibrator.statusMessage)
+    }
 }

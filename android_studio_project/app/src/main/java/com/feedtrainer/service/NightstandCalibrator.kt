@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Path
 import android.net.Uri
+import android.os.PowerManager
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.feedtrainer.data.AppPreferences
@@ -28,6 +29,7 @@ import kotlinx.coroutines.launch
  * 3. Likes them to prime YouTube's recommendation algorithm weights
  * 4. Fast-swipes junk videos
  *
+ * Automatically holds a partial WakeLock so the device CPU remains active while charging.
  * Yields immediately if user interacts or presses Stop.
  */
 object NightstandCalibrator {
@@ -93,6 +95,7 @@ object NightstandCalibrator {
 
     private var calibrationJob: Job? = null
     private val calibrationScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var wakeLock: PowerManager.WakeLock? = null
 
     fun start(
         svc: AccessibilityService,
@@ -110,6 +113,8 @@ object NightstandCalibrator {
         progressPercent = 0
         statusMessage = "Starting Ghost Training session…"
 
+        acquireWakeLock(svc)
+
         calibrationJob = calibrationScope.launch {
             var videosLiked = 0
             var junkSwiped = 0
@@ -117,7 +122,7 @@ object NightstandCalibrator {
 
             try {
                 val goals = prefs.goals
-                val selectedQueries = mutableListOf<Pair<String, String>>() // Pair(query, goal)
+                val selectedQueries = mutableListOf<Pair<String, String>>()
 
                 if (goals.isEmpty()) {
                     DEFAULT_SEED_QUERIES.forEach { selectedQueries.add(it to "General") }
@@ -146,7 +151,7 @@ object NightstandCalibrator {
 
                     // 1. Launch real YouTube search intent for seed query
                     launchYouTubeSearch(svc, query)
-                    delay(3500) // Wait for search results to render
+                    delay(3500)
 
                     if (!isRunning) break
 
@@ -192,7 +197,6 @@ object NightstandCalibrator {
                             }
                         }
                     } else {
-                        // If in Shorts feed, run dwell & like
                         val isShorts = ReelExtractor.isShortsActive(searchRoot)
                         if (isShorts) {
                             val reel = ReelExtractor.extract(searchRoot, "com.google.android.youtube", svc.resources.displayMetrics.heightPixels)
@@ -228,6 +232,7 @@ object NightstandCalibrator {
             } finally {
                 isRunning = false
                 prefs.isCalibrationRunning = false
+                releaseWakeLock()
                 onComplete(videosLiked, junkSwiped)
             }
         }
@@ -239,7 +244,40 @@ object NightstandCalibrator {
         prefs.isCalibrationRunning = false
         statusMessage = "Calibration stopped"
         progressPercent = 0
+        releaseWakeLock()
         Log.i(TAG, "Calibration stopped by user")
+    }
+
+    /**
+     * Called when a user touch/scroll is detected during calibration.
+     * Yields control immediately so user has uninterrupted priority.
+     */
+    fun onUserInteracted(prefs: AppPreferences) {
+        if (isRunning) {
+            Log.i(TAG, "User interaction detected — yielding Ghost Training control immediately")
+            stop(prefs)
+        }
+    }
+
+    private fun acquireWakeLock(context: Context) {
+        try {
+            val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            wakeLock = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "FeedTrainer:GhostCalibrationWakeLock")
+            wakeLock?.acquire(CALIBRATION_SESSION_DURATION_MS)
+            Log.d(TAG, "WakeLock acquired for ghost training session")
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not acquire WakeLock", e)
+        }
+    }
+
+    private fun releaseWakeLock() {
+        try {
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+                Log.d(TAG, "WakeLock released")
+            }
+        } catch (_: Exception) {}
+        wakeLock = null
     }
 
     private fun launchYouTubeSearch(svc: AccessibilityService, query: String) {
@@ -256,7 +294,27 @@ object NightstandCalibrator {
     }
 
     private fun clickTopSearchResult(root: AccessibilityNodeInfo): Boolean {
-        // Try common YouTube search result video container IDs
+        // Inspect results list
+        try {
+            val resultsList = root.findAccessibilityNodeInfosByViewId("com.google.android.youtube:id/results")
+            if (resultsList.isNotEmpty()) {
+                val list = resultsList[0]
+                for (i in 0 until list.childCount) {
+                    val child = list.getChild(i) ?: continue
+                    if (child.isClickable) {
+                        return child.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    }
+                    for (j in 0 until child.childCount) {
+                        val subChild = child.getChild(j) ?: continue
+                        if (subChild.isClickable) {
+                            return subChild.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Fallback: search by common video container IDs
         val videoIds = listOf(
             "com.google.android.youtube:id/thumbnail",
             "com.google.android.youtube:id/video_title",
@@ -287,6 +345,7 @@ object NightstandCalibrator {
         val likeIds = listOf(
             "com.google.android.youtube:id/like_button",
             "com.google.android.youtube:id/segmented_like_button",
+            "com.google.android.youtube:id/reel_player_like_button",
             "com.google.android.youtube:id/like_button_view"
         )
         for (id in likeIds) {
@@ -299,7 +358,6 @@ object NightstandCalibrator {
             } catch (_: Exception) {}
         }
 
-        // Fallback: search by contentDescription
         val descTerms = listOf("like this video", "like", "j'aime", "mag ich")
         for (term in descTerms) {
             val node = findByContentDesc(root, term)

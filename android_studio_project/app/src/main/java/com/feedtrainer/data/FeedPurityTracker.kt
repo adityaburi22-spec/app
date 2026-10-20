@@ -65,6 +65,32 @@ object FeedPurityTracker {
     }
 
     /**
+     * Seeds an uncalibrated starting baseline (Day 1: ~14% high-signal) for initial users,
+     * so they immediately see their algorithm transformation journey from Day 1 onward.
+     */
+    fun ensureInitialBaselineIfEmpty(context: Context) {
+        val existing = load(context)
+        if (existing.isNotEmpty()) return
+
+        val now = System.currentTimeMillis()
+        val baseline = mutableListOf<FeedPurityPoint>()
+        // 30 initial points spanning 48 hours, with ~14% high signal baseline
+        for (i in 30 downTo 1) {
+            val ts = now - (i * 90 * 60 * 1000L)
+            val isHigh = (i % 7 == 0) // ~14% high signal baseline
+            baseline.add(
+                FeedPurityPoint(
+                    timestamp = ts,
+                    isHighSignal = isHigh,
+                    category = if (isHigh) "Coding, AI, and Software Engineering" else "Brainrot"
+                )
+            )
+        }
+        val prefs = context.getSharedPreferences("feedtrainer_prefs", Context.MODE_PRIVATE)
+        prefs.edit().putString(KEY_PURITY_POINTS, gson.toJson(baseline)).apply()
+    }
+
+    /**
      * Legacy backward compatibility method for 48-hour hourly buckets.
      */
     fun getHourlyBuckets(context: Context, hours: Int = 48): List<PurityBucket> {
@@ -76,6 +102,7 @@ object FeedPurityTracker {
      * Returns dynamic purity buckets for the specified timeframe.
      */
     fun getBuckets(context: Context, timeframe: DashboardTimeframe): List<PurityBucket> {
+        ensureInitialBaselineIfEmpty(context)
         val now = System.currentTimeMillis()
         val cutoff = now - (timeframe.hours * 60 * 60 * 1000L)
         val points = load(context).filter { it.timestamp >= cutoff }
@@ -138,6 +165,7 @@ object FeedPurityTracker {
      * Calculates comprehensive multi-metric analytics for the timeframe.
      */
     fun getMetrics(context: Context, timeframe: DashboardTimeframe): DashboardMetrics {
+        ensureInitialBaselineIfEmpty(context)
         val now = System.currentTimeMillis()
         val cutoff = now - (timeframe.hours * 60 * 60 * 1000L)
         val points = load(context).filter { it.timestamp >= cutoff }.sortedBy { it.timestamp }

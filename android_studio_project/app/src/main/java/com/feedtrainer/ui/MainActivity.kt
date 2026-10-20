@@ -572,11 +572,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateFeedPurityChart() {
-        btnTf24H.isSelected = selectedTimeframe == DashboardTimeframe.H24
-        btnTf48H.isSelected = selectedTimeframe == DashboardTimeframe.H48
-        btnTf7D.isSelected = selectedTimeframe == DashboardTimeframe.D7
-        btnTf30D.isSelected = selectedTimeframe == DashboardTimeframe.D30
-        btnTfAll.isSelected = selectedTimeframe == DashboardTimeframe.ALL
+        val tfButtons = listOf(
+            btnTf24H to DashboardTimeframe.H24,
+            btnTf48H to DashboardTimeframe.H48,
+            btnTf7D to DashboardTimeframe.D7,
+            btnTf30D to DashboardTimeframe.D30,
+            btnTfAll to DashboardTimeframe.ALL
+        )
+        for ((btn, tf) in tfButtons) {
+            val isSel = selectedTimeframe == tf
+            btn.isSelected = isSel
+            btn.setTextColor(getColor(if (isSel) R.color.brand_dark else R.color.brand_text_muted))
+            btn.typeface = if (isSel) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
+        }
 
         val buckets = FeedPurityTracker.getBuckets(this, selectedTimeframe)
         chartFeedPurity.setBuckets(buckets, selectedTimeframe)

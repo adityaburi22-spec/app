@@ -87,7 +87,22 @@ class FeedTrainerService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event ?: return
         val pkg = event.packageName?.toString() ?: return
-        if (pkg != YT) return
+
+        // If user navigated away from YouTube, dismiss any active Dopamine Dimmer overlay
+        if (pkg != YT) {
+            DopamineDimmer.dismissOverlay(applicationContext)
+            return
+        }
+
+        // Non-destructive calibration yield: if user touches or scrolls screen, pause ghost training
+        if (NightstandCalibrator.isRunning) {
+            if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED ||
+                event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED ||
+                event.eventType == AccessibilityEvent.TYPE_TOUCH_INTERACTION_START
+            ) {
+                NightstandCalibrator.onUserInteracted(prefs)
+            }
+        }
 
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
