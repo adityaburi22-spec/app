@@ -20,7 +20,7 @@ object FeedBrain {
     private var activeGoals: List<String> = emptyList()
     private var goalVecs: Array<FloatArray> = emptyArray()
 
-    private const val LIKE_T = 0.58f
+    private const val LIKE_T = 0.44f
     private const val NI_T = 0.20f
 
     @Volatile

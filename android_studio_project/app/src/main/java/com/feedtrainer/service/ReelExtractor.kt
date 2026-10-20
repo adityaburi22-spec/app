@@ -25,13 +25,16 @@ object ReelExtractor {
     private val YT_USERNAME_IDS = listOf(
         "com.google.android.youtube:id/reel_channel_name",
         "com.google.android.youtube:id/channel_name",
-        "com.google.android.youtube:id/reel_player_channel_name"
+        "com.google.android.youtube:id/reel_player_channel_name",
+        "com.google.android.youtube:id/channel_title"
     )
 
     private val YT_CAPTION_IDS = listOf(
+        "com.google.android.youtube:id/reel_player_title",
         "com.google.android.youtube:id/reel_description",
         "com.google.android.youtube:id/title",
-        "com.google.android.youtube:id/reel_player_title"
+        "com.google.android.youtube:id/video_title",
+        "com.google.android.youtube:id/shorts_title"
     )
 
     private val IGNORED_UI_TEXTS = setOf(

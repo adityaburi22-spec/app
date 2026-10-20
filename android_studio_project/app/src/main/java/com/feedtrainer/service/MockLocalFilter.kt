@@ -29,14 +29,17 @@ object MockLocalFilter {
         "sigma", "rizz", "skibidi", "brainrot", "viral", "meme", "trend"
     )
 
-    // Expanded with multilingual terms (Spanish, Hindi/Hinglish, French, German, Russian, Portuguese)
+    // Expanded with tech terms (including 2-letter tokens like ai, ml, js, ts, go, git) and multilingual terms
     private val GOAL_KEYWORD_MAP = mapOf(
         "Coding, AI, and Software Engineering" to listOf(
             "code", "coding", "programmer", "developer", "software", "python", "javascript",
-            "kotlin", "java", "react", "ai", "machine learning", "neural", "llm", "deep learning",
-            "github", "backend", "frontend", "algo", "algorithm", "leetcode", "tech", "computer science",
+            "kotlin", "java", "react", "ai", "ml", "machine learning", "neural", "llm", "deep learning",
+            "github", "git", "backend", "frontend", "fullstack", "algo", "algorithm", "leetcode", "tech", "computer science",
             "pytorch", "tensorflow", "transformer", "model training", "dataset", "deployment",
-            "api", "database", "system design", "microservice", "docker", "kubernetes",
+            "api", "database", "sql", "db", "system design", "microservice", "docker", "kubernetes",
+            "rust", "golang", "go", "c++", "linux", "terminal", "vscode", "nextjs", "nodejs", "html", "css",
+            "web", "app", "dev", "build", "tutorial", "interview", "engineer", "engineering", "chatgpt", "gemini",
+            "claude", "agent", "bug", "debugging",
             // Multilingual:
             "programacion", "programación", "código", "desarrollo", "desarrollador",
             "développeur", "programmation", "informatique",
@@ -46,7 +49,7 @@ object MockLocalFilter {
         "Science, Tech & Mathematics" to listOf(
             "science", "physics", "quantum", "math", "mathematics", "calculus", "astronomy",
             "space", "engineering", "biology", "chemistry", "neuroscience", "robotics", "invention",
-            "research", "experiment", "hypothesis", "discovery", "theory", "simulation",
+            "research", "experiment", "hypothesis", "discovery", "theory", "simulation", "tech", "nasa",
             // Multilingual:
             "ciencia", "física", "matemáticas", "astronomía", "química", "robótica",
             "nauka", "physique", "chimie", "sciences",
@@ -106,12 +109,12 @@ object MockLocalFilter {
         var bestGoal: String? = null
         var maxHits = 0
 
-        val words = text.split(Regex("[^\\p{L}0-9_#]+")).filter { it.length > 2 }.toSet()
+        val words = text.split(Regex("[^\\p{L}0-9_#+]+")).filter { it.length >= 2 }.toSet()
 
         for (goal in userGoals) {
             val keywords = GOAL_KEYWORD_MAP[goal] ?: goal.lowercase().split(",", " ", "&", "-")
                 .map { it.trim() }
-                .filter { it.length > 2 }
+                .filter { it.length >= 2 }
 
             val hits = keywords.count { kw ->
                 if (kw.contains(" ")) text.contains(kw) else words.contains(kw)
@@ -133,8 +136,8 @@ object MockLocalFilter {
                 val score = 0.55f + (maxHits * 0.08f).coerceAtMost(0.40f)
                 ClassificationResult("LIKE", score, bestGoal)
             }
-            // Single goal hit requires 0 junk hits and at least 4 letters in keyword
-            maxHits == 1 && junkHits == 0 && words.any { it.length >= 4 } -> {
+            // Friendly single match for tech/coding with 0 junk signals
+            maxHits >= 1 && junkHits == 0 -> {
                 ClassificationResult("LIKE", 0.52f, bestGoal)
             }
             junkHits >= 1 && maxHits == 0 -> {

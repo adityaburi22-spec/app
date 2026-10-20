@@ -16,6 +16,39 @@ class FeedTrainerLogicTest {
     private val userGoals = AppPreferences.DEFAULT_GOALS
 
     @Test
+    fun testYouTubeCodingShorts_ShouldReturnLike() {
+        val shorts1 = Reel(
+            username = "Fireship",
+            caption = "Python in 100 Seconds #shorts #python #coding",
+            raw = listOf("Fireship", "Python in 100 Seconds"),
+            pkg = "com.google.android.youtube"
+        )
+        val res1 = MockLocalFilter.classify(shorts1, userGoals)
+        assertEquals("LIKE", res1.decision)
+        assertEquals("Coding, AI, and Software Engineering", res1.matchedGoal)
+
+        val shorts2 = Reel(
+            username = "TechWithTim",
+            caption = "Top 5 AI tools every developer needs in 2026",
+            raw = listOf("TechWithTim", "Top 5 AI tools every developer needs"),
+            pkg = "com.google.android.youtube"
+        )
+        val res2 = MockLocalFilter.classify(shorts2, userGoals)
+        assertEquals("LIKE", res2.decision)
+        assertEquals("Coding, AI, and Software Engineering", res2.matchedGoal)
+
+        val shorts3 = Reel(
+            username = "NeetCode",
+            caption = "How to solve LeetCode Two Sum algorithm in Python",
+            raw = listOf("NeetCode", "How to solve LeetCode Two Sum"),
+            pkg = "com.google.android.youtube"
+        )
+        val res3 = MockLocalFilter.classify(shorts3, userGoals)
+        assertEquals("LIKE", res3.decision)
+        assertEquals("Coding, AI, and Software Engineering", res3.matchedGoal)
+    }
+
+    @Test
     fun testTechReelClassification_ShouldReturnLike() {
         val reel = Reel(
             username = "python_wizard",

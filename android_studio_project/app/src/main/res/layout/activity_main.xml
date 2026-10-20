@@ -762,7 +762,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Open Instagram Reels or YouTube Shorts\nto begin live feed steering"
+                        android:text="Open YouTube Shorts\nto begin live feed steering"
                         android:textColor="#1E2D3D"
                         android:textSize="11sp"
                         android:gravity="center"

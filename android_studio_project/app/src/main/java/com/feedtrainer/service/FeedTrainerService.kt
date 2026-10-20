@@ -10,7 +10,6 @@ class FeedTrainerService : AccessibilityService() {
 
     companion object {
         private const val TAG = "FeedTrainerService"
-        private const val IG = "com.instagram.android"
         private const val YT = "com.google.android.youtube"
 
         @Volatile
@@ -26,13 +25,14 @@ class FeedTrainerService : AccessibilityService() {
         super.onServiceConnected()
         isServiceRunning = true
         prefs = AppPreferences(applicationContext)
-        Log.i(TAG, "FeedTrainer Accessibility Service connected")
+        Log.i(TAG, "FeedTrainer Accessibility Service connected for YouTube Shorts")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event ?: return
         val pkg = event.packageName?.toString() ?: return
-        if (pkg != IG && pkg != YT) return
+        // Beta version focuses strictly on YouTube Shorts
+        if (pkg != YT) return
 
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
@@ -67,7 +67,7 @@ class FeedTrainerService : AccessibilityService() {
 
         val goals = prefs.goals
         val result = FeedBrain.classify(reel, goals)
-        val platform = if (pkg == IG) "Instagram" else "YouTube"
+        val platform = "YouTube"
 
         Log.d(TAG, "[$platform] @${reel.username} -> ${result.decision} (score: ${result.score}, goal: ${result.matchedGoal})")
 

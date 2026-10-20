@@ -12,20 +12,21 @@ import com.feedtrainer.data.AppPreferences
 object ActionExecutor {
 
     private const val TAG = "ActionExecutor"
-    private const val MIN_SPACING_MS = 3800L
+    private const val MIN_SPACING_MS = 3200L
     private var lastActionAt = 0L
 
+    // Prioritized YouTube Shorts like button IDs
     private val LIKE_VIEW_IDS = listOf(
-        "com.instagram.android:id/like_button",
-        "com.instagram.android:id/row_feed_button_like",
-        "com.instagram.android:id/clips_like_button",
-        "com.instagram.android:id/reel_viewer_like_button",
         "com.google.android.youtube:id/like_button",
-        "com.google.android.youtube:id/reel_player_like_button"
+        "com.google.android.youtube:id/reel_player_like_button",
+        "com.google.android.youtube:id/button_icon",
+        "com.google.android.youtube:id/shorts_like_button",
+        "com.google.android.youtube:id/segmented_like_button"
     )
 
     private val MULTILINGUAL_LIKE_TERMS = listOf(
-        "like", "like button", "me gusta", "j'aime", "curtir",
+        "like this video", "like this short", "like button", "like",
+        "me gusta este video", "j'aime cette vidéo", "curtir este vídeo",
         "gefällt mir", "лайк", "पसंद", "좋아요", "いいね"
     )
 
@@ -71,12 +72,12 @@ object ActionExecutor {
                     Handler(Looper.getMainLooper()).post {
                         Toast.makeText(
                             svc,
-                            "🎯 FeedTrainer: Liked! (Goal: $goalLabel)",
+                            "🎯 FeedTrainer: Liked YouTube Short! (Goal: $goalLabel)",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
                 }
-                Log.d(TAG, "Successfully steered reel towards: $goalLabel")
+                Log.d(TAG, "Successfully steered YouTube Short towards: $goalLabel")
                 return true
             }
         }
@@ -86,7 +87,7 @@ object ActionExecutor {
     private fun findLikeButton(root: AccessibilityNodeInfo?, screenWidth: Int, screenHeight: Int): AccessibilityNodeInfo? {
         root ?: return null
 
-        // 1. Check known view IDs first
+        // 1. Check known YouTube view IDs first
         for (id in LIKE_VIEW_IDS) {
             try {
                 val nodes = root.findAccessibilityNodeInfosByViewId(id)
@@ -104,7 +105,7 @@ object ActionExecutor {
             }
         }
 
-        // 2. Search by content description with strict bounding & negative term checks
+        // 2. Search by content description
         val hitDesc = findNodeByContentDescription(root, screenWidth, screenHeight)
         if (hitDesc != null) return hitDesc
 
@@ -119,37 +120,34 @@ object ActionExecutor {
         val rect = Rect()
         node.getBoundsInScreen(rect)
 
-        // Must be non-empty
         if (rect.width() <= 0 || rect.height() <= 0) return false
 
-        // A like button cannot occupy more than 35% of the screen width or 25% of the screen height.
-        // This prevents accidentally clicking the entire video player container, which causes
-        // the Instagram heart to pop up at the center of the screen!
-        if (rect.width() > screenWidth * 0.35f || rect.height() > screenHeight * 0.25f) {
+        // A like button cannot occupy more than 40% of the screen width or 25% of the screen height.
+        if (rect.width() > screenWidth * 0.40f || rect.height() > screenHeight * 0.25f) {
             return false
         }
         return true
     }
 
     private fun isAlreadyLiked(desc: String): Boolean {
-        return desc == "liked" ||
+        return desc.startsWith("unlike") ||
+               desc.contains("unlike this") ||
                desc.contains("already liked") ||
-               desc.contains("unlike") ||
                desc.contains("ya te gusta") ||
                desc.contains("vous aimez déjà")
     }
 
     private fun isNegativeOrContainerDesc(desc: String): Boolean {
+        // If it specifically says "like this video" or "like this short", it's the like button!
+        if (desc.startsWith("like this video") || desc.startsWith("like this short")) {
+            return false
+        }
         return desc.contains("double tap") ||
                desc.contains("tap to") ||
                desc.contains("video player") ||
-               desc.contains("reel by") ||
-               desc.contains("post by") ||
-               desc.contains("media") ||
-               desc.contains("view") ||
-               desc.contains("container") ||
+               desc.contains("video surface") ||
+               desc.contains("media player") ||
                desc.contains("pause") ||
-               desc.contains("play") ||
                desc.contains("dislike") ||
                isAlreadyLiked(desc)
     }
@@ -168,7 +166,7 @@ object ActionExecutor {
             }
 
             val matchesLikeTerm = MULTILINGUAL_LIKE_TERMS.any { term ->
-                desc == term || desc.startsWith("$term ") || desc.startsWith("$term,")
+                desc == term || desc.startsWith("$term ") || desc.startsWith("$term,") || desc.contains(term)
             }
 
             if (matchesLikeTerm) {

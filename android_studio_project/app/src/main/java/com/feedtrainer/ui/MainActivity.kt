@@ -235,7 +235,7 @@ class MainActivity : AppCompatActivity() {
         if (isServiceActive) {
             viewServiceDot.setBackgroundResource(R.drawable.dot_green)
             tvServiceStatusTitle.text = "Steering Engine: Active"
-            tvServiceStatusDesc.text = "FeedTrainer is actively monitoring Instagram Reels & YouTube Shorts to curate your feed."
+            tvServiceStatusDesc.text = "FeedTrainer is actively monitoring YouTube Shorts to curate your feed toward life goals."
             btnEnableService.text = "Settings"
             btnEnableService.isEnabled = true
         } else {
