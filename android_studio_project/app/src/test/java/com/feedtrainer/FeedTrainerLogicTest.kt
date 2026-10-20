@@ -59,6 +59,30 @@ class FeedTrainerLogicTest {
     }
 
     @Test
+    fun testBrainrotReelClassification_ShouldReturnNotInterested() {
+        // Reel with literal brainrot in title/caption
+        val brainrotReel = Reel(
+            username = "daily_brainrot_clips",
+            caption = "Most insane brainrot moments ever skibidi rizz in Ohio",
+            raw = listOf("daily_brainrot_clips", "brainrot moments", "#brainrot #skibidi"),
+            pkg = "com.instagram.android"
+        )
+        val result = MockLocalFilter.classify(brainrotReel, userGoals)
+        assertEquals("NOT_INTERESTED", result.decision)
+        assertTrue(result.score <= 0.1f)
+
+        // Reel that sneakily has a tech keyword but is actually brainrot
+        val sneakyBrainrotReel = Reel(
+            username = "tiktok_viral_memes",
+            caption = "Coding AI while doing the skibidi sigma rizz challenge prank",
+            raw = listOf("tiktok_viral_memes", "Coding AI while doing the skibidi"),
+            pkg = "com.instagram.android"
+        )
+        val sneakyResult = MockLocalFilter.classify(sneakyBrainrotReel, userGoals)
+        assertEquals("NOT_INTERESTED", sneakyResult.decision)
+    }
+
+    @Test
     fun testNeutralReelClassification_ShouldReturnSkip() {
         val reel = Reel(
             username = "cute_cats_99",

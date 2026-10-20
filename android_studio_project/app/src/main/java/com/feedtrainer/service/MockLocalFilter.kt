@@ -45,7 +45,7 @@ object MockLocalFilter {
             "gym", "fitness", "workout", "muscle", "hypertrophy", "bodybuilding", "protein",
             "exercise", "strength", "lifting", "squat", "bench", "deadlift", "diet", "nutrition",
             "calisthenics", "mobility", "cardio", "health", "training", "form", "macros",
-            "calories", "cut", "bulk", "progressive overload", "recovery", "sleep"
+            "calories", "cut", "bulk", "progressive overload", "recovery", "sleep recovery"
         ),
         "Investing, Stocks, and Business" to listOf(
             "investing", "stocks", "finance", "money", "business", "entrepreneur", "startup",
@@ -72,12 +72,16 @@ object MockLocalFilter {
         var bestGoal: String? = null
         var maxHits = 0
 
+        val words = text.split(Regex("[^a-z0-9_#]+")).toSet()
+
         for (goal in userGoals) {
             val keywords = GOAL_KEYWORD_MAP[goal] ?: goal.lowercase().split(",", " ", "&", "-")
                 .map { it.trim() }
                 .filter { it.length > 2 }
 
-            val hits = keywords.count { text.contains(it) }
+            val hits = keywords.count { kw ->
+                if (kw.contains(" ")) text.contains(kw) else words.contains(kw)
+            }
             if (hits > maxHits) {
                 maxHits = hits
                 bestGoal = goal
@@ -85,7 +89,9 @@ object MockLocalFilter {
         }
 
         // 3. Check junk keywords — need 2+ hits with no goal hits to block
-        val junkHits = DEFAULT_JUNK_KEYWORDS.count { text.contains(it) }
+        val junkHits = DEFAULT_JUNK_KEYWORDS.count { kw ->
+            if (kw.contains(" ")) text.contains(kw) else words.contains(kw)
+        }
 
         return when {
             // Need 2+ goal hits AND more goal hits than junk hits to LIKE
