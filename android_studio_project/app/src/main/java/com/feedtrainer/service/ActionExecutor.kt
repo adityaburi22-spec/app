@@ -27,6 +27,10 @@ object ActionExecutor {
         matchedGoal: String?,
         prefs: AppPreferences
     ): Boolean {
+        if (!prefs.isSubscribed) {
+            Log.w(TAG, "Action blocked: User has not purchased FeedTrainer")
+            return false
+        }
         if (!prefs.isAutoLikeEnabled || decision != "LIKE") return false
 
         val now = System.currentTimeMillis()

@@ -61,9 +61,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
         prefs = AppPreferences(this)
+
+        if (!enforceAccessControl()) return
+
+        setContentView(R.layout.activity_main)
 
         initViews()
         setupListeners()
@@ -72,7 +74,52 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!enforceAccessControl()) return
         updateDashboard()
+        checkSubscriptionWithServer()
+    }
+
+    private fun enforceAccessControl(): Boolean {
+        if (prefs.userId.isNullOrBlank() || prefs.authToken.isNullOrBlank()) {
+            val intent = Intent(this, AuthActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(intent)
+            finish()
+            return false
+        }
+
+        if (!prefs.isSubscribed) {
+            val intent = Intent(this, PaywallActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            startActivity(intent)
+            finish()
+            return false
+        }
+
+        return true
+    }
+
+    private fun checkSubscriptionWithServer() {
+        val uid = prefs.userId ?: return
+        val email = prefs.userEmail
+        val token = prefs.authToken ?: ""
+
+        lifecycleScope.launch {
+            val status = SupabaseClient.checkSubscriptionStatus(uid, email, token)
+            if (!status.first) {
+                prefs.isSubscribed = false
+                val intent = Intent(this@MainActivity, PaywallActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
+            } else {
+                prefs.isSubscribed = true
+                prefs.subscriptionPlan = status.second
+            }
+        }
     }
 
     private fun initViews() {
@@ -361,8 +408,12 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("Sign Out") { _, _ ->
                 prefs.clearAuth()
-                updateDashboard()
                 Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, AuthActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                finish()
             }
             .setNeutralButton("Close", null)
             .show()

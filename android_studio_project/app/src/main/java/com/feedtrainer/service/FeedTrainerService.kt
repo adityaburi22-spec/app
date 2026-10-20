@@ -57,6 +57,12 @@ class FeedTrainerService : AccessibilityService() {
             prefs = AppPreferences(applicationContext)
         }
 
+        // STRICT ACCESS CONTROL: Only paying members can use feed steering
+        if (!prefs.isSubscribed) {
+            Log.w(TAG, "Feed steering blocked: User does not have an active subscription")
+            return
+        }
+
         prefs.incrementReelsScanned()
 
         val goals = prefs.goals

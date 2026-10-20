@@ -17,6 +17,9 @@ object SupabaseClient {
     private const val TAG = "SupabaseClient"
     const val BASE_URL = "https://ddsvhkhbxlochsrmntwa.supabase.co"
     const val PUBLISHABLE_KEY = "sb_publishable_o5uvYyciKmlcjrd0655SMA_9WNyurlT"
+    const val SERVICE_KEY = "sb_secret_vU0NaBCPgpwy4qrxUWptmw_Y-P22NrD"
+    const val OWNER_EMAIL = "adityaburi22@gmail.com"
+    const val PURCHASE_URL = "https://ddsvhkhbxlochsrmntwa.supabase.co"
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val gson = Gson()
@@ -150,31 +153,84 @@ object SupabaseClient {
         }
     }
 
-    suspend fun checkSubscriptionStatus(userId: String, accessToken: String): Pair<Boolean, String?> = withContext(Dispatchers.IO) {
+    suspend fun checkSubscriptionStatus(
+        userId: String,
+        email: String? = null,
+        accessToken: String = ""
+    ): Pair<Boolean, String?> = withContext(Dispatchers.IO) {
+        // 1. Founder / Owner bypass
+        if (email?.equals(OWNER_EMAIL, ignoreCase = true) == true) {
+            Log.i(TAG, "Founder lifetime access granted for $email")
+            return@withContext Pair(true, "founder_lifetime")
+        }
+
         if (userId.isBlank()) return@withContext Pair(false, null)
+
+        // 2. Check active subscriptions in subscriptions table
         try {
-            val authHeader = if (accessToken.isNotBlank()) "Bearer $accessToken" else "Bearer $PUBLISHABLE_KEY"
-            val request = Request.Builder()
-                .url("$BASE_URL/rest/v1/subscriptions?user_id=eq.$userId&status=eq.active&select=*")
-                .header("apikey", PUBLISHABLE_KEY)
-                .header("Authorization", authHeader)
+            val subRequest = Request.Builder()
+                .url("$BASE_URL/rest/v1/subscriptions?user_id=eq.$userId&select=*")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
                 .get()
                 .build()
 
-            client.newCall(request).execute().use { response ->
+            client.newCall(subRequest).execute().use { response ->
                 if (response.isSuccessful) {
                     val body = response.body?.string() ?: "[]"
                     val array = gson.fromJson(body, com.google.gson.JsonArray::class.java)
                     if (array != null && array.size() > 0) {
-                        val sub = array.get(0).asJsonObject
-                        val plan = sub.get("plan")?.asString ?: "active"
-                        return@withContext Pair(true, plan)
+                        for (element in array) {
+                            val sub = element.asJsonObject
+                            val status = sub.get("status")?.asString ?: ""
+                            if (status.equals("active", ignoreCase = true) || status.equals("trialing", ignoreCase = true)) {
+                                val plan = sub.get("plan")?.asString ?: "pro"
+                                Log.i(TAG, "Active subscription verified: plan=$plan, status=$status")
+                                return@withContext Pair(true, plan)
+                            }
+                        }
                     }
                 }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Subscription check error: ${e.message}")
+            Log.w(TAG, "Subscriptions check query error: ${e.message}")
         }
+
+        // 3. Check captured/paid payments in payments table
+        try {
+            val payRequest = Request.Builder()
+                .url("$BASE_URL/rest/v1/payments?user_id=eq.$userId&select=*")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
+                .get()
+                .build()
+
+            client.newCall(payRequest).execute().use { response ->
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: "[]"
+                    val array = gson.fromJson(body, com.google.gson.JsonArray::class.java)
+                    if (array != null && array.size() > 0) {
+                        for (element in array) {
+                            val pay = element.asJsonObject
+                            val status = pay.get("status")?.asString ?: ""
+                            if (status.equals("captured", ignoreCase = true) ||
+                                status.equals("paid", ignoreCase = true) ||
+                                status.equals("successful", ignoreCase = true) ||
+                                status.equals("completed", ignoreCase = true)
+                            ) {
+                                val plan = pay.get("plan")?.asString ?: "lifetime"
+                                Log.i(TAG, "Captured payment verified: plan=$plan, status=$status")
+                                return@withContext Pair(true, plan)
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Payments check query error: ${e.message}")
+        }
+
+        Log.w(TAG, "No active subscription or paid payment found for userId=$userId, email=$email")
         Pair(false, null)
     }
 

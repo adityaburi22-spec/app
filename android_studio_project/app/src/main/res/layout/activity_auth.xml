@@ -189,9 +189,9 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="OR"
-                android:textColor="#2A3D55"
-                android:textSize="11sp"
+                android:text="MEMBERSHIP"
+                android:textColor="#3A5070"
+                android:textSize="10sp"
                 android:letterSpacing="0.1"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp" />
@@ -203,19 +203,28 @@
                 android:background="#1E2D3D" />
         </LinearLayout>
 
-        <!-- Continue as Guest -->
+        <!-- Buy on Website CTA -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnContinueGuest"
+            android:id="@+id/btnVisitWebsite"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:text="Continue as Guest"
+            android:text="Purchase Plan on Website"
             android:textSize="13sp"
-            android:textColor="#4B6580"
+            android:textColor="#38BDF8"
             app:strokeColor="#1E2D3D"
             app:strokeWidth="1dp"
             app:backgroundTint="#00000000"
             app:cornerRadius="24dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Already purchased? Sign in above to activate FeedTrainer."
+            android:textColor="#4B6580"
+            android:textSize="11sp"
+            android:gravity="center"
+            android:layout_marginTop="12dp" />
 
     </LinearLayout>
 </ScrollView>

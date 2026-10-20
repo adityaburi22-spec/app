@@ -44,6 +44,13 @@ class KeepAliveService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val prefs = com.feedtrainer.data.AppPreferences(this)
+        if (!prefs.isSubscribed) {
+            android.util.Log.w("KeepAliveService", "Stopped: User has not purchased FeedTrainer")
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             this,
             0,

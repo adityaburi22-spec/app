@@ -27,7 +27,7 @@ class AuthActivity : AppCompatActivity() {
     private lateinit var tvAuthError: TextView
     private lateinit var btnSubmitAuth: MaterialButton
     private lateinit var tvToggleAuthMode: TextView
-    private lateinit var btnContinueGuest: MaterialButton
+    private lateinit var btnVisitWebsite: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +43,7 @@ class AuthActivity : AppCompatActivity() {
         tvAuthError = findViewById(R.id.tvAuthError)
         btnSubmitAuth = findViewById(R.id.btnSubmitAuth)
         tvToggleAuthMode = findViewById(R.id.tvToggleAuthMode)
-        btnContinueGuest = findViewById(R.id.btnContinueGuest)
+        btnVisitWebsite = findViewById(R.id.btnVisitWebsite)
 
         tvToggleAuthMode.setOnClickListener {
             toggleMode()
@@ -53,9 +53,9 @@ class AuthActivity : AppCompatActivity() {
             performAuth()
         }
 
-        btnContinueGuest.setOnClickListener {
-            Toast.makeText(this, "Continuing in Guest Mode (Offline)", Toast.LENGTH_SHORT).show()
-            finish()
+        btnVisitWebsite.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(SupabaseClient.PURCHASE_URL))
+            startActivity(intent)
         }
     }
 
@@ -115,23 +115,42 @@ class AuthActivity : AppCompatActivity() {
                     prefs.userFullName = session.fullName ?: fullName
                     prefs.authToken = session.accessToken
 
-                    // Check subscription status asynchronously
-                    if (session.userId.isNotBlank()) {
-                        val sub = SupabaseClient.checkSubscriptionStatus(session.userId, session.accessToken)
-                        prefs.isSubscribed = sub.first
-                        prefs.subscriptionPlan = sub.second
+                    // Check subscription status
+                    val sub = if (session.userId.isNotBlank()) {
+                        SupabaseClient.checkSubscriptionStatus(session.userId, session.email, session.accessToken)
+                    } else {
+                        Pair(false, null)
                     }
+
+                    prefs.isSubscribed = sub.first
+                    prefs.subscriptionPlan = sub.second
 
                     // Sync user goals to Supabase
                     if (session.accessToken.isNotBlank()) {
                         SupabaseClient.syncUserGoals(session.accessToken, prefs.goals)
                     }
 
-                    Toast.makeText(
-                        this@AuthActivity,
-                        "Welcome ${prefs.userFullName ?: "back"}!",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    if (sub.first) {
+                        Toast.makeText(
+                            this@AuthActivity,
+                            "Welcome ${prefs.userFullName ?: "back"}! Pro membership active.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        val intent = Intent(this@AuthActivity, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                    } else {
+                        Toast.makeText(
+                            this@AuthActivity,
+                            "Signed in. Subscription required to activate FeedTrainer.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        val intent = Intent(this@AuthActivity, PaywallActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                    }
 
                     finish()
                 }

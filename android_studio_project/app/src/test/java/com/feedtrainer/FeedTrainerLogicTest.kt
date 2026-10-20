@@ -142,4 +142,9 @@ class FeedTrainerLogicTest {
         assertEquals("test-uuid-1234", session.userId)
         assertTrue(session.isSubscriber)
     }
+
+    @Test
+    fun testFounderLifetimeAccessPolicy() {
+        assertEquals("adityaburi22@gmail.com", com.feedtrainer.network.SupabaseClient.OWNER_EMAIL)
+    }
 }
