@@ -246,4 +246,36 @@ class FeedTrainerLogicTest {
         assertEquals("LIKE", result.decision)
         assertEquals("Coding, AI, and Software Engineering", result.matchedGoal)
     }
+
+    @Test
+    fun testFeedPurityRatioCalculation() {
+        val bucket = com.feedtrainer.data.FeedPurityTracker.PurityBucket(
+            label = "10:00",
+            hourTimestamp = 1700000000000L,
+            highSignalCount = 14,
+            totalCount = 20
+        )
+        assertEquals(0.70f, bucket.purityRatio, 0.01f)
+        assertEquals(70, bucket.purityPercent)
+
+        val emptyBucket = com.feedtrainer.data.FeedPurityTracker.PurityBucket(
+            label = "11:00",
+            hourTimestamp = 1700003600000L,
+            highSignalCount = 0,
+            totalCount = 0
+        )
+        assertEquals(0f, emptyBucket.purityRatio, 0.001f)
+        assertEquals(0, emptyBucket.purityPercent)
+    }
+
+    @Test
+    fun testHomeFeedClickbaitDetection() {
+        val clickbaitTitle1 = "5 websites that feel illegal to know about"
+        val clickbaitTitle2 = "Wait till the end to see what happens"
+        val legitimateTitle = "Building a Distributed Database in Rust - Full Course"
+
+        assertTrue(com.feedtrainer.service.ReelExtractor.matchesClickbaitRegex(clickbaitTitle1))
+        assertTrue(com.feedtrainer.service.ReelExtractor.matchesClickbaitRegex(clickbaitTitle2))
+        org.junit.Assert.assertFalse(com.feedtrainer.service.ReelExtractor.matchesClickbaitRegex(legitimateTitle))
+    }
 }

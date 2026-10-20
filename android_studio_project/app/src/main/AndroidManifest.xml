@@ -102,6 +102,15 @@
             </intent-filter>
         </receiver>
 
+        <!-- Charger receiver for Nightstand Ghost Training auto-trigger -->
+        <receiver
+            android:name=".service.ChargerReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

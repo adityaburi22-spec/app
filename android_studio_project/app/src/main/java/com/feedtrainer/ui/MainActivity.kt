@@ -24,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import com.feedtrainer.BuildConfig
 import com.feedtrainer.R
 import com.feedtrainer.data.AppPreferences
+import com.feedtrainer.data.FeedPurityTracker
 import com.feedtrainer.model.ActivityLogItem
 import com.feedtrainer.model.AppReleaseUpdate
 import com.feedtrainer.model.BugReport
@@ -31,6 +32,7 @@ import com.feedtrainer.model.Reel
 import com.feedtrainer.network.SupabaseClient
 import com.feedtrainer.service.FeedBrain
 import com.feedtrainer.service.FeedTrainerService
+import com.feedtrainer.service.NightstandCalibrator
 import com.feedtrainer.util.AppUpdateManager
 import com.feedtrainer.util.OemKeepAliveHelper
 import com.google.android.material.button.MaterialButton
@@ -83,6 +85,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutEmptyLogs: LinearLayout
     private lateinit var tvEmptyLogs: TextView
     private lateinit var containerLogs: LinearLayout
+
+    // Advanced features
+    private lateinit var switchDopamineDimmer: SwitchCompat
+    private lateinit var switchHomeFeedSweeper: SwitchCompat
+    private lateinit var tvHomeFeedSweeperSubtitle: TextView
+    private lateinit var switchAutoCalibrationOnCharge: SwitchCompat
+    private lateinit var tvCalibrationStatus: TextView
+    private lateinit var btnStartCalibration: MaterialButton
+    private lateinit var btnStopCalibration: MaterialButton
+    private lateinit var progressCalibration: ProgressBar
+    private lateinit var chartFeedPurity: FeedPurityChartView
+    private lateinit var tvPurityBadge: TextView
 
     private var isUpdatePromptActive = false
 
@@ -185,6 +199,18 @@ class MainActivity : AppCompatActivity() {
         layoutEmptyLogs = findViewById(R.id.layoutEmptyLogs)
         tvEmptyLogs = findViewById(R.id.tvEmptyLogs)
         containerLogs = findViewById(R.id.containerLogs)
+
+        // Advanced features
+        switchDopamineDimmer = findViewById(R.id.switchDopamineDimmer)
+        switchHomeFeedSweeper = findViewById(R.id.switchHomeFeedSweeper)
+        tvHomeFeedSweeperSubtitle = findViewById(R.id.tvHomeFeedSweeperSubtitle)
+        switchAutoCalibrationOnCharge = findViewById(R.id.switchAutoCalibrationOnCharge)
+        tvCalibrationStatus = findViewById(R.id.tvCalibrationStatus)
+        btnStartCalibration = findViewById(R.id.btnStartCalibration)
+        btnStopCalibration = findViewById(R.id.btnStopCalibration)
+        progressCalibration = findViewById(R.id.progressCalibration)
+        chartFeedPurity = findViewById(R.id.chartFeedPurity)
+        tvPurityBadge = findViewById(R.id.tvPurityBadge)
     }
 
     private fun setupListeners() {
@@ -308,6 +334,85 @@ class MainActivity : AppCompatActivity() {
         btnRunTest.setOnClickListener {
             runClassifierTest()
         }
+
+        // ─── Dopamine Dimmer ────────────────────────────────────────────────────
+        switchDopamineDimmer.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isDopamineDimmerEnabled = isChecked
+            Toast.makeText(
+                this,
+                if (isChecked) "Dopamine Dimmer active — junk videos go greyscale after 3 in a row"
+                else "Dopamine Dimmer disabled",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        // ─── Home Feed Sweeper ──────────────────────────────────────────────────
+        switchHomeFeedSweeper.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isHomeFeedSweeperEnabled = isChecked
+            tvHomeFeedSweeperSubtitle.text = if (isChecked)
+                "Active — marking clickbait as Not Interested while you scroll YouTube Home"
+            else
+                "Off — enable to auto-clean junk cards from YouTube Home tab"
+            Toast.makeText(
+                this,
+                if (isChecked) "Home Feed Sweeper enabled" else "Home Feed Sweeper disabled",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        // ─── Auto Calibration on Charge ─────────────────────────────────────────
+        switchAutoCalibrationOnCharge.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isAutoCalibrationOnChargeEnabled = isChecked
+            Toast.makeText(
+                this,
+                if (isChecked) "Auto Ghost Training enabled — will calibrate on next charger plug-in"
+                else "Auto Ghost Training disabled",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        // ─── Manual Calibration ──────────────────────────────────────────────────
+        btnStartCalibration.setOnClickListener {
+            if (!isAccessibilityServiceEnabled()) {
+                Toast.makeText(this, "Enable FeedTrainer Accessibility Service first", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            if (NightstandCalibrator.isRunning) {
+                Toast.makeText(this, "Calibration is already running", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val intent = Intent(this, com.feedtrainer.service.FeedTrainerService::class.java).apply {
+                action = com.feedtrainer.service.FeedTrainerService.ACTION_START_CALIBRATION
+            }
+            startService(intent)
+            btnStartCalibration.isEnabled = false
+            btnStopCalibration.isEnabled = true
+            progressCalibration.visibility = View.VISIBLE
+            progressCalibration.progress = 0
+            tvCalibrationStatus.text = "Ghost Training started — open YouTube Shorts now"
+            Toast.makeText(this, "Ghost Training started! Open YouTube Shorts to calibrate.", Toast.LENGTH_LONG).show()
+
+            lifecycleScope.launch {
+                while (NightstandCalibrator.isRunning) {
+                    kotlinx.coroutines.delay(5000)
+                    progressCalibration.progress = NightstandCalibrator.progressPercent
+                    tvCalibrationStatus.text = NightstandCalibrator.statusMessage
+                }
+                btnStartCalibration.isEnabled = true
+                btnStopCalibration.isEnabled = false
+                progressCalibration.visibility = View.GONE
+                tvCalibrationStatus.text = NightstandCalibrator.statusMessage
+                updateFeedPurityChart()
+            }
+        }
+
+        btnStopCalibration.setOnClickListener {
+            NightstandCalibrator.stop(prefs)
+            btnStartCalibration.isEnabled = true
+            btnStopCalibration.isEnabled = false
+            progressCalibration.visibility = View.GONE
+            tvCalibrationStatus.text = "Calibration stopped"
+        }
     }
 
     private fun updateDashboard() {
@@ -349,6 +454,9 @@ class MainActivity : AppCompatActivity() {
         switchDwellGate.isChecked = prefs.isDwellTimeGatingEnabled
         switchMicroHud.isChecked = prefs.isMicroHudEnabled
         switchLikeToast.isChecked = prefs.isLikeNotificationEnabled
+        switchDopamineDimmer.isChecked = prefs.isDopamineDimmerEnabled
+        switchHomeFeedSweeper.isChecked = prefs.isHomeFeedSweeperEnabled
+        switchAutoCalibrationOnCharge.isChecked = prefs.isAutoCalibrationOnChargeEnabled
 
         // 5. Floating widget
         val canOverlay = Settings.canDrawOverlays(this)
@@ -386,6 +494,24 @@ class MainActivity : AppCompatActivity() {
 
         // 9. Recent logs
         renderActivityLogs()
+
+        // 10. Feed Purity Chart
+        updateFeedPurityChart()
+    }
+
+    private fun updateFeedPurityChart() {
+        val buckets = com.feedtrainer.data.FeedPurityTracker.getHourlyBuckets(this, hours = 48)
+        chartFeedPurity.setBuckets(buckets)
+        val ratio = com.feedtrainer.data.FeedPurityTracker.getOverallPurityRatio(this, hours = 48)
+        val pct = (ratio * 100).toInt()
+        tvPurityBadge.text = "$pct% High-Signal"
+        tvPurityBadge.setTextColor(getColor(
+            when {
+                pct >= 60 -> R.color.status_green
+                pct >= 30 -> R.color.accent_amber
+                else -> R.color.status_red
+            }
+        ))
     }
 
     private fun renderActivityLogs() {

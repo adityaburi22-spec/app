@@ -1,12 +1,15 @@
 package com.feedtrainer.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.feedtrainer.data.AppPreferences
 import com.feedtrainer.data.ChannelMemoryStore
+import com.feedtrainer.data.FeedPurityTracker
 import com.feedtrainer.model.ActivityLogItem
 import com.feedtrainer.model.Reel
+import com.feedtrainer.ui.DopamineDimmer
 import com.feedtrainer.ui.MicroHudOverlay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +26,17 @@ class FeedTrainerService : AccessibilityService() {
         private const val DWELL_GATE_MS = 4600L // 4.6 seconds dwell gate
         private const val FAST_SWIPE_THRESHOLD_MS = 1800L
 
+        const val ACTION_START_CALIBRATION = "com.feedtrainer.START_CALIBRATION"
+        const val ACTION_STOP_CALIBRATION = "com.feedtrainer.STOP_CALIBRATION"
+
+        // Detect YouTube Home tab (non-Shorts) for sweeper
+        private val YT_HOME_TAB_IDS = listOf(
+            "com.google.android.youtube:id/browse_id_text",
+            "com.google.android.youtube:id/results",
+            "com.google.android.youtube:id/item_section_recycler_view",
+            "com.google.android.youtube:id/home_tab_recycler_view"
+        )
+
         @Volatile
         var isServiceRunning = false
             private set
@@ -37,12 +51,32 @@ class FeedTrainerService : AccessibilityService() {
     private var activeChannelHandle = ""
     private var pendingDwellJob: Job? = null
 
+    // Home Feed Sweeper throttle (don't re-sweep more than once per 8 seconds)
+    private var lastSweepAt = 0L
+    private val SWEEP_THROTTLE_MS = 8000L
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         isServiceRunning = true
         prefs = AppPreferences(applicationContext)
         channelMemory = ChannelMemoryStore.getInstance(applicationContext)
         Log.i(TAG, "FeedTrainer 4-Layer Steering Pipeline connected for YouTube Shorts")
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_START_CALIBRATION -> {
+                if (!NightstandCalibrator.isRunning) {
+                    val p = prefs
+                    val cm = channelMemory
+                    NightstandCalibrator.start(this, p, cm) { liked, swiped ->
+                        Log.i(TAG, "Calibration complete: liked=$liked, junkSwiped=$swiped")
+                    }
+                }
+            }
+            ACTION_STOP_CALIBRATION -> NightstandCalibrator.stop(prefs)
+        }
+        return START_NOT_STICKY
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -57,9 +91,22 @@ class FeedTrainerService : AccessibilityService() {
         val now = System.currentTimeMillis()
         val root = rootInActiveWindow ?: return
 
-        // Guard Bug 1: Only act if YouTube Shorts is active (reject standard video watch)
+        // ─── Home Feed Sweeper ──────────────────────────────────────────────────
+        // When NOT in Shorts, check if we're on the YouTube Home tab and sweep junk
         if (!ReelExtractor.isShortsActive(root)) {
             pendingDwellJob?.cancel()
+
+            if (prefs.isHomeFeedSweeperEnabled && now - lastSweepAt > SWEEP_THROTTLE_MS) {
+                val isOnHomeFeed = YT_HOME_TAB_IDS.any { id ->
+                    try {
+                        root.findAccessibilityNodeInfosByViewId(id).isNotEmpty()
+                    } catch (_: Exception) { false }
+                }
+                if (isOnHomeFeed) {
+                    lastSweepAt = now
+                    HomeFeedSweeper.sweep(this, root, prefs.isHomeFeedSweeperEnabled)
+                }
+            }
             return
         }
 
@@ -130,11 +177,16 @@ class FeedTrainerService : AccessibilityService() {
                     matchedGoal = "Clickbait Trap"
                 )
             )
+            // Dopamine Dimmer: count this as junk
+            FeedPurityTracker.record(applicationContext, isHighSignal = false)
+            DopamineDimmer.onVideoClassified(applicationContext, isHighSignal = false, prefs.isDopamineDimmerEnabled)
             return
         }
 
         if (channelMemory.isBlacklisted(handle)) {
             Log.d(TAG, "[$handle] Channel blacklisted in local memory (3+ fast swipes / unlikes) -> Skipped")
+            FeedPurityTracker.record(applicationContext, isHighSignal = false)
+            DopamineDimmer.onVideoClassified(applicationContext, isHighSignal = false, prefs.isDopamineDimmerEnabled)
             return
         }
 
@@ -166,7 +218,15 @@ class FeedTrainerService : AccessibilityService() {
 
             Log.d(TAG, "[$platform] @$handle -> ${result.decision} (Score: ${result.score}, Target: ${result.targetScore}, Slop: ${result.slopScore})")
 
-            if (result.decision != "LIKE") {
+            val isHighSignal = result.decision == "LIKE"
+
+            // ─── Feed Purity Tracking ─────────────────────────────────────────────
+            FeedPurityTracker.record(applicationContext, isHighSignal = isHighSignal)
+
+            // ─── Dopamine Dimmer ──────────────────────────────────────────────────
+            DopamineDimmer.onVideoClassified(applicationContext, isHighSignal, prefs.isDopamineDimmerEnabled)
+
+            if (!isHighSignal) {
                 prefs.addActivityLog(
                     ActivityLogItem(
                         platform = platform,
@@ -234,6 +294,9 @@ class FeedTrainerService : AccessibilityService() {
         super.onDestroy()
         isServiceRunning = false
         pendingDwellJob?.cancel()
+        DopamineDimmer.reset(applicationContext)
+        HomeFeedSweeper.reset()
+        if (NightstandCalibrator.isRunning) NightstandCalibrator.stop(prefs)
         Log.i(TAG, "FeedTrainer Accessibility Service destroyed")
     }
 }

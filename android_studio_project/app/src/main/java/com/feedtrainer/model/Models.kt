@@ -60,6 +60,14 @@ data class AppReleaseUpdate(
     val isMandatory: Boolean = true
 )
 
+/**
+ * One data point for the 48-Hour Signal Shift Dashboard.
+ */
+data class FeedPurityPoint(
+    val timestamp: Long,
+    val isHighSignal: Boolean // true = LIKE, false = SKIP/NOT_INTERESTED
+)
+
 data class ChannelReputation(
     val handle: String,
     var positiveLikes: Int = 0,

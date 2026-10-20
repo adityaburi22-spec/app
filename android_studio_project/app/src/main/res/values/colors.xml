@@ -46,6 +46,9 @@
     <color name="status_red">#DC2626</color>
     <color name="status_red_bg">#FEE2E2</color>
 
+    <!-- Divider -->
+    <color name="brand_divider">#E5E7EB</color>
+
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
 </resources>

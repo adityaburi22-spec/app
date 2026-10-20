@@ -64,6 +64,26 @@ class AppPreferences(context: Context) {
         get() = prefs.getBoolean("floating_widget_enabled", false)
         set(value) = prefs.edit().putBoolean("floating_widget_enabled", value).apply()
 
+    // --- Feature: Dopamine Dimmer (greyscale overlay on 3 consecutive brainrot videos) ---
+    var isDopamineDimmerEnabled: Boolean
+        get() = prefs.getBoolean("dopamine_dimmer_enabled", true) // DEFAULT ON - neuro nudge
+        set(value) = prefs.edit().putBoolean("dopamine_dimmer_enabled", value).apply()
+
+    // --- Feature: Home Feed Sweeper (Not Interested automation on YouTube Home tab) ---
+    var isHomeFeedSweeperEnabled: Boolean
+        get() = prefs.getBoolean("home_feed_sweeper_enabled", false) // DEFAULT OFF - opt-in
+        set(value) = prefs.edit().putBoolean("home_feed_sweeper_enabled", value).apply()
+
+    // --- Feature: Nightstand Calibration Mode (Ghost training seed keyword session) ---
+    var isCalibrationRunning: Boolean
+        get() = prefs.getBoolean("calibration_running", false)
+        set(value) = prefs.edit().putBoolean("calibration_running", value).apply()
+
+    // Auto-trigger calibration when phone is plugged in to charge
+    var isAutoCalibrationOnChargeEnabled: Boolean
+        get() = prefs.getBoolean("auto_calibration_on_charge", false) // opt-in
+        set(value) = prefs.edit().putBoolean("auto_calibration_on_charge", value).apply()
+
     var dailyLikeCap: Int
         get() = prefs.getInt("daily_like_cap", 40)
         set(value) = prefs.edit().putInt("daily_like_cap", value).apply()
