@@ -3,7 +3,7 @@
     android:shape="oval">
     <gradient
         android:type="sweep"
-        android:startColor="#10B981"
-        android:centerColor="#38BDF8"
-        android:endColor="#10B981" />
+        android:startColor="@color/brand_moss"
+        android:centerColor="@color/brand_sage"
+        android:endColor="@color/brand_moss" />
 </shape>

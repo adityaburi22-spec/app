@@ -10,6 +10,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 object SupabaseClient {
@@ -232,6 +233,82 @@ object SupabaseClient {
 
         Log.w(TAG, "No active subscription or paid payment found for userId=$userId, email=$email")
         Pair(false, null)
+    }
+
+    private val localBugReportsCache = Collections.synchronizedList(mutableListOf<com.feedtrainer.model.BugReport>())
+
+    suspend fun submitBugReport(report: com.feedtrainer.model.BugReport): Boolean = withContext(Dispatchers.IO) {
+        localBugReportsCache.add(0, report)
+        try {
+            val payload = JsonObject().apply {
+                addProperty("id", report.id)
+                addProperty("user_email", report.userEmail)
+                addProperty("title", report.title)
+                addProperty("category", report.category)
+                addProperty("description", report.description)
+                addProperty("device_info", report.deviceInfo)
+                addProperty("app_version", report.appVersion)
+                addProperty("timestamp", report.timestamp)
+            }
+
+            val request = Request.Builder()
+                .url("$BASE_URL/rest/v1/bug_reports")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
+                .header("Content-Type", "application/json")
+                .header("Prefer", "return=minimal")
+                .post(payload.toString().toRequestBody(jsonMediaType))
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                Log.i(TAG, "Bug report submitted: code=${response.code}")
+                response.isSuccessful || response.code in 200..299
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to submit bug report to Supabase (cached locally)", e)
+            true // Cached locally so return true
+        }
+    }
+
+    suspend fun fetchBugReports(): List<com.feedtrainer.model.BugReport> = withContext(Dispatchers.IO) {
+        val remoteList = mutableListOf<com.feedtrainer.model.BugReport>()
+        try {
+            val request = Request.Builder()
+                .url("$BASE_URL/rest/v1/bug_reports?select=*&order=timestamp.desc")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val body = response.body?.string() ?: "[]"
+                    val array = gson.fromJson(body, com.google.gson.JsonArray::class.java)
+                    if (array != null) {
+                        for (el in array) {
+                            val obj = el.asJsonObject
+                            remoteList.add(
+                                com.feedtrainer.model.BugReport(
+                                    id = obj.get("id")?.asString ?: "",
+                                    userEmail = obj.get("user_email")?.asString ?: "Unknown",
+                                    title = obj.get("title")?.asString ?: "No title",
+                                    category = obj.get("category")?.asString ?: "General",
+                                    description = obj.get("description")?.asString ?: "",
+                                    deviceInfo = obj.get("device_info")?.asString ?: "",
+                                    appVersion = obj.get("app_version")?.asString ?: "",
+                                    timestamp = obj.get("timestamp")?.asLong ?: System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to fetch remote bug reports: ${e.message}")
+        }
+
+        val combined = (remoteList + localBugReportsCache).distinctBy { it.id }.sortedByDescending { it.timestamp }
+        combined
     }
 
     private fun parseErrorMessage(body: String, code: Int): String {

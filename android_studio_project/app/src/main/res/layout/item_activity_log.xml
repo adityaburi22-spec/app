@@ -5,15 +5,15 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:layout_marginBottom="8dp"
-    android:background="@drawable/bg_input_field"
+    android:background="@drawable/bg_stat_card"
     android:padding="12dp"
     android:gravity="top">
 
-    <!-- Left accent -->
+    <!-- Left accent bar -->
     <View
-        android:layout_width="3dp"
+        android:layout_width="4dp"
         android:layout_height="match_parent"
-        android:background="#10B981"
+        android:background="@color/brand_moss"
         android:layout_marginEnd="12dp" />
 
     <!-- Content -->
@@ -35,10 +35,10 @@
                 android:id="@+id/tvPlatform"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Instagram"
-                android:textColor="#38BDF8"
+                android:text="YouTube"
+                android:textColor="@color/brand_dark"
                 android:textSize="10sp"
-                android:letterSpacing="0.05"
+                android:letterSpacing="0.04"
                 android:fontFamily="sans-serif-medium"
                 android:background="@drawable/bg_pill_blue"
                 android:paddingStart="8dp"
@@ -53,7 +53,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@username"
-                android:textColor="#CBD5E1"
+                android:textColor="@color/brand_dark"
                 android:textSize="12sp"
                 android:singleLine="true"
                 android:ellipsize="end" />
@@ -63,11 +63,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="LIKED"
-                android:textColor="#10B981"
+                android:textColor="@color/status_green"
                 android:textSize="9sp"
                 android:letterSpacing="0.05"
                 android:fontFamily="sans-serif-medium"
-                android:background="@drawable/bg_pill_green"
+                android:background="@drawable/bg_status_active"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
                 android:paddingTop="2dp"
@@ -80,7 +80,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="How to build machine learning models in production..."
-            android:textColor="#4B6580"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:maxLines="2"
             android:ellipsize="end"
@@ -93,7 +93,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🎯 Coding, AI &amp; Software"
-            android:textColor="#34D399"
+            android:textColor="@color/brand_moss_dark"
+            android:fontFamily="sans-serif-medium"
             android:textSize="11sp" />
 
     </LinearLayout>

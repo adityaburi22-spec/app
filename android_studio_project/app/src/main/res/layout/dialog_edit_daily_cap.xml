@@ -4,14 +4,14 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:background="#141E30">
+    android:padding="24dp"
+    android:background="@drawable/bg_card">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Set Daily Like Cap"
-        android:textColor="#F1F5F9"
+        android:textColor="@color/brand_dark"
         android:textSize="18sp"
         android:fontFamily="sans-serif-medium" />
 
@@ -19,8 +19,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Choose how many YouTube Shorts FeedTrainer can like each day to steer your recommendations toward your life goals."
-        android:textColor="#94A3B8"
-        android:textSize="12sp"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp"
         android:lineSpacingExtra="2dp"
         android:layout_marginTop="6dp"
         android:layout_marginBottom="16dp" />
@@ -30,7 +30,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="QUICK PRESETS"
-        android:textColor="#4B6580"
+        android:textColor="@color/brand_text_muted"
         android:textSize="10sp"
         android:letterSpacing="0.05"
         android:layout_marginBottom="8dp" />
@@ -45,28 +45,28 @@
             android:id="@+id/btnPreset20"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_weight="1"
             android:text="20"
             android:textSize="12sp"
-            android:textColor="#CBD5E1"
-            app:strokeColor="#334155"
+            android:textColor="@color/brand_dark"
+            app:strokeColor="@color/brand_border"
             app:strokeWidth="1dp"
-            app:cornerRadius="18dp"
+            app:cornerRadius="19dp"
             android:layout_marginEnd="4dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPreset40"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_weight="1"
             android:text="40"
             android:textSize="12sp"
-            android:textColor="#10B981"
-            app:strokeColor="#10B981"
-            app:strokeWidth="1dp"
-            app:cornerRadius="18dp"
+            android:textColor="@color/brand_moss_dark"
+            app:strokeColor="@color/brand_moss"
+            app:strokeWidth="1.5dp"
+            app:cornerRadius="19dp"
             android:layout_marginStart="2dp"
             android:layout_marginEnd="2dp" />
 
@@ -74,14 +74,14 @@
             android:id="@+id/btnPreset75"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_weight="1"
             android:text="75"
             android:textSize="12sp"
-            android:textColor="#CBD5E1"
-            app:strokeColor="#334155"
+            android:textColor="@color/brand_dark"
+            app:strokeColor="@color/brand_border"
             app:strokeWidth="1dp"
-            app:cornerRadius="18dp"
+            app:cornerRadius="19dp"
             android:layout_marginStart="2dp"
             android:layout_marginEnd="2dp" />
 
@@ -89,14 +89,14 @@
             android:id="@+id/btnPreset100"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_weight="1"
             android:text="100"
             android:textSize="12sp"
-            android:textColor="#CBD5E1"
-            app:strokeColor="#334155"
+            android:textColor="@color/brand_dark"
+            app:strokeColor="@color/brand_border"
             app:strokeWidth="1dp"
-            app:cornerRadius="18dp"
+            app:cornerRadius="19dp"
             android:layout_marginStart="4dp" />
     </LinearLayout>
 
@@ -105,7 +105,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="CUSTOM LIMIT"
-        android:textColor="#4B6580"
+        android:textColor="@color/brand_text_muted"
         android:textSize="10sp"
         android:letterSpacing="0.05"
         android:layout_marginBottom="6dp" />
@@ -114,11 +114,11 @@
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:boxStrokeColor="#10B981"
-        app:boxCornerRadiusTopStart="12dp"
-        app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusBottomStart="12dp"
-        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxStrokeColor="@color/brand_moss"
+        app:boxCornerRadiusTopStart="14dp"
+        app:boxCornerRadiusTopEnd="14dp"
+        app:boxCornerRadiusBottomStart="14dp"
+        app:boxCornerRadiusBottomEnd="14dp"
         android:layout_marginBottom="20dp">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -126,10 +126,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="number"
-            android:textColor="#F1F5F9"
+            android:textColor="@color/brand_dark"
             android:textSize="15sp"
             android:hint="Likes per day (5 - 300)"
-            android:textColorHint="#475569" />
+            android:textColorHint="@color/text_muted" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Action Buttons -->
@@ -145,7 +145,7 @@
             android:layout_width="wrap_content"
             android:layout_height="42dp"
             android:text="Cancel"
-            android:textColor="#94A3B8"
+            android:textColor="@color/text_secondary"
             android:layout_marginEnd="8dp" />
 
         <com.google.android.material.button.MaterialButton
@@ -153,8 +153,8 @@
             android:layout_width="wrap_content"
             android:layout_height="42dp"
             android:text="Save Limit"
-            android:textColor="#FFFFFF"
-            app:backgroundTint="#10B981"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/brand_moss"
             app:cornerRadius="21dp"
             android:paddingStart="20dp"
             android:paddingEnd="20dp" />

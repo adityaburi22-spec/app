@@ -1,29 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#10B981</color>
-    <color name="primary_dark">#059669</color>
-    <color name="primary_light">#34D399</color>
-    <color name="primary_container">#064E3B</color>
+    <!-- Brand Palette from BetterBrainX Web -->
+    <color name="brand_cream">#FEFAF3</color>
+    <color name="brand_blush">#F6E2E9</color>
+    <color name="brand_blush_light">#FDF6F8</color>
+    <color name="brand_sage">#B8CFB3</color>
+    <color name="brand_sage_light">#EAF2E8</color>
+    <color name="brand_moss">#84A282</color>
+    <color name="brand_moss_dark">#5C7B5A</color>
+    <color name="brand_dark">#1E2B1E</color>
+    <color name="brand_dark_surface">#253525</color>
+    <color name="brand_text_muted">#6B7F6A</color>
+    <color name="brand_border">#DCE7DA</color>
+    <color name="brand_card_bg">#FFFFFF</color>
+
+    <!-- Semantic / Material Mapping -->
+    <color name="primary">#84A282</color>
+    <color name="primary_dark">#5C7B5A</color>
+    <color name="primary_light">#B8CFB3</color>
+    <color name="primary_container">#EAF2E8</color>
     <color name="on_primary">#FFFFFF</color>
 
-    <color name="accent_blue">#3B82F6</color>
-    <color name="accent_purple">#8B5CF6</color>
-    <color name="accent_amber">#F59E0B</color>
-    <color name="accent_rose">#F43F5E</color>
+    <color name="accent_blue">#2563EB</color>
+    <color name="accent_purple">#7C3AED</color>
+    <color name="accent_amber">#D97706</color>
+    <color name="accent_rose">#E11D48</color>
 
-    <color name="bg_dark">#0F172A</color>
-    <color name="surface_dark">#1E293B</color>
-    <color name="surface_card">#243248</color>
-    <color name="surface_card_light">#F8FAFC</color>
-    <color name="border_dark">#334155</color>
+    <!-- Surfaces & Backgrounds -->
+    <color name="bg_dark">#FEFAF3</color>
+    <color name="surface_dark">#FFFFFF</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="surface_card_light">#FEFAF3</color>
+    <color name="border_dark">#DCE7DA</color>
 
-    <color name="text_primary">#F8FAFC</color>
-    <color name="text_secondary">#94A3B8</color>
-    <color name="text_muted">#64748B</color>
+    <!-- Text hierarchy -->
+    <color name="text_primary">#1E2B1E</color>
+    <color name="text_secondary">#4E614D</color>
+    <color name="text_muted">#778B76</color>
 
-    <color name="status_green">#22C55E</color>
-    <color name="status_yellow">#EAB308</color>
-    <color name="status_red">#EF4444</color>
+    <!-- Status badges -->
+    <color name="status_green">#16A34A</color>
+    <color name="status_green_bg">#DCFCE7</color>
+    <color name="status_yellow">#CA8A04</color>
+    <color name="status_yellow_bg">#FEF9C3</color>
+    <color name="status_red">#DC2626</color>
+    <color name="status_red_bg">#FEE2E2</color>
 
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>

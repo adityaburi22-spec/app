@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_card">
+
+    <ImageView
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/feedtrainer_logo"
+        android:scaleType="fitCenter"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/tvUpdateTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mandatory Update Required"
+        android:textColor="@color/brand_dark"
+        android:textSize="18sp"
+        android:fontFamily="sans-serif-medium" />
+
+    <TextView
+        android:id="@+id/tvUpdateVersion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="New Version v1.0.1 Available"
+        android:textColor="@color/brand_moss_dark"
+        android:textSize="13sp"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="10dp" />
+
+    <TextView
+        android:id="@+id/tvUpdateNotes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="A new update is required to continue using FeedTrainer. This release includes critical bug fixes and algorithm improvements."
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:lineSpacingExtra="2dp"
+        android:background="@drawable/bg_stat_card"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Progress bar & percentage (hidden until download starts) -->
+    <LinearLayout
+        android:id="@+id/layoutUpdateProgress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/progressUpdateDownload"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="8dp"
+            android:progress="0"
+            android:max="100"
+            android:progressTint="@color/brand_moss" />
+
+        <TextView
+            android:id="@+id/tvDownloadStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Downloading update... 0%"
+            android:textColor="@color/brand_text_muted"
+            android:textSize="11sp"
+            android:layout_marginTop="6dp" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnStartUpdate"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Download &amp; Install Update"
+        android:textColor="@color/white"
+        android:fontFamily="sans-serif-medium"
+        app:backgroundTint="@color/brand_moss"
+        app:cornerRadius="24dp" />
+</LinearLayout>

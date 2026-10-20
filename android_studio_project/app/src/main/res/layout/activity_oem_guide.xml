@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0B1120"
+    android:background="@color/brand_cream"
     android:fillViewport="true">
 
     <LinearLayout
@@ -33,7 +33,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Battery Shield"
-                    android:textColor="#F1F5F9"
+                    android:textColor="@color/brand_dark"
                     android:textSize="20sp"
                     android:fontFamily="sans-serif-medium" />
 
@@ -41,7 +41,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Keep FeedTrainer always running"
-                    android:textColor="#4B6580"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:layout_marginTop="2dp" />
             </LinearLayout>
@@ -64,7 +64,7 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="14dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#0C1A3D">
+            app:cardBackgroundColor="@color/brand_sage_light">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -91,7 +91,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Device Detected"
-                        android:textColor="#38BDF8"
+                        android:textColor="@color/brand_moss_dark"
                         android:textSize="13sp"
                         android:fontFamily="sans-serif-medium" />
 
@@ -99,7 +99,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Follow the steps below to prevent your phone from killing FeedTrainer in the background"
-                        android:textColor="#3A5070"
+                        android:textColor="@color/text_muted"
                         android:textSize="11sp"
                         android:layout_marginTop="3dp"
                         android:lineSpacingExtra="2dp" />
@@ -116,7 +116,7 @@
             android:layout_marginBottom="10dp"
             app:cardCornerRadius="18dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -136,7 +136,7 @@
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:text="1"
-                        android:textColor="#0B1120"
+                        android:textColor="@color/brand_cream"
                         android:textSize="13sp"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="center"
@@ -153,7 +153,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Disable Battery Optimization"
-                            android:textColor="#F1F5F9"
+                            android:textColor="@color/brand_dark"
                             android:textSize="14sp"
                             android:fontFamily="sans-serif-medium" />
 
@@ -172,7 +172,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Allows FeedTrainer to monitor feeds without Android Doze killing it when the screen is on."
-                    android:textColor="#4B6580"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:lineSpacingExtra="2dp"
                     android:layout_marginBottom="14dp" />
@@ -185,7 +185,7 @@
                     android:textSize="13sp"
                     android:textColor="#FFFFFF"
                     android:fontFamily="sans-serif-medium"
-                    app:backgroundTint="#10B981"
+                    app:backgroundTint="@color/brand_moss"
                     app:cornerRadius="23dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -199,7 +199,7 @@
             android:layout_marginBottom="10dp"
             app:cardCornerRadius="18dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -219,7 +219,7 @@
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:text="2"
-                        android:textColor="#0B1120"
+                        android:textColor="@color/brand_cream"
                         android:textSize="13sp"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="center"
@@ -231,7 +231,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Enable Autostart &amp; Background Power"
-                        android:textColor="#F1F5F9"
+                        android:textColor="@color/brand_dark"
                         android:textSize="14sp"
                         android:fontFamily="sans-serif-medium" />
                 </LinearLayout>
@@ -241,7 +241,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="1. Open Autostart settings\n2. Turn ON FeedTrainer\n3. Allow background activity"
-                    android:textColor="#4B6580"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:lineSpacingExtra="3dp"
                     android:layout_marginBottom="14dp" />
@@ -268,7 +268,7 @@
             android:layout_marginBottom="20dp"
             app:cardCornerRadius="18dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -288,7 +288,7 @@
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:text="3"
-                        android:textColor="#0B1120"
+                        android:textColor="@color/brand_cream"
                         android:textSize="13sp"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="center"
@@ -300,7 +300,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Lock App in Recent Apps"
-                        android:textColor="#F1F5F9"
+                        android:textColor="@color/brand_dark"
                         android:textSize="14sp"
                         android:fontFamily="sans-serif-medium" />
                 </LinearLayout>
@@ -309,7 +309,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Open Recent Apps, locate FeedTrainer, and tap the Padlock icon (or swipe down on the card) to prevent the system cleaner from removing it."
-                    android:textColor="#4B6580"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp"
                     android:lineSpacingExtra="3dp" />
 
@@ -338,7 +338,7 @@
             android:textSize="14sp"
             android:textColor="#FFFFFF"
             android:fontFamily="sans-serif-medium"
-            app:backgroundTint="#10B981"
+            app:backgroundTint="@color/brand_moss"
             app:cornerRadius="25dp" />
 
     </LinearLayout>

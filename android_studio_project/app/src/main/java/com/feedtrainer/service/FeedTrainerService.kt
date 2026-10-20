@@ -39,10 +39,17 @@ class FeedTrainerService : AccessibilityService() {
         ) return
 
         val now = System.currentTimeMillis()
-        if (now - lastProcessTime < 800) return // Throttle rapid UI flutters
+        if (now - lastProcessTime < 700) return // Throttle rapid UI flutters
 
         val root = rootInActiveWindow ?: return
-        val reel = ReelExtractor.extract(root, pkg) ?: return
+
+        // Guard Bug 1: Only act if YouTube Shorts is active (never standard video watch)
+        if (!ReelExtractor.isShortsActive(root)) {
+            return
+        }
+
+        val screenHeight = resources.displayMetrics.heightPixels
+        val reel = ReelExtractor.extract(root, pkg, screenHeight) ?: return
 
         // Create a unique signature to avoid re-classifying the exact same reel multiple times
         val signature = "${reel.username}_${reel.caption.take(40)}"
@@ -65,9 +72,25 @@ class FeedTrainerService : AccessibilityService() {
 
         prefs.incrementReelsScanned()
 
+        val platform = "YouTube"
+
+        // Sponsored content check: Skip if user has not enabled liking sponsored reels
+        if (reel.isSponsored && !prefs.isLikeSponsoredEnabled) {
+            Log.d(TAG, "[$platform] @${reel.username} -> SPONSORED (Skipped per user toggle)")
+            prefs.addActivityLog(
+                ActivityLogItem(
+                    platform = platform,
+                    username = reel.username,
+                    captionSnippet = "[Sponsored] ${reel.caption.take(65)}",
+                    action = "SKIPPED",
+                    matchedGoal = "Sponsored Content"
+                )
+            )
+            return
+        }
+
         val goals = prefs.goals
         val result = FeedBrain.classify(reel, goals)
-        val platform = "YouTube"
 
         Log.d(TAG, "[$platform] @${reel.username} -> ${result.decision} (score: ${result.score}, goal: ${result.matchedGoal})")
 

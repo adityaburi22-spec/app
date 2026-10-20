@@ -1,39 +1,42 @@
 package com.feedtrainer.service
 
+import android.graphics.Rect
+import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.feedtrainer.model.Reel
 
 object ReelExtractor {
 
-    private val IG_USERNAME_IDS = listOf(
-        "com.instagram.android:id/clips_username",
-        "com.instagram.android:id/reel_feed_username",
-        "com.instagram.android:id/row_feed_photo_profile_name",
-        "com.instagram.android:id/clips_author_container",
-        "com.instagram.android:id/primary_label"
+    private const val TAG = "ReelExtractor"
+
+    // YouTube Shorts View IDs
+    private val SHORTS_CONTAINER_IDS = listOf(
+        "com.google.android.youtube:id/reel_recycler",
+        "com.google.android.youtube:id/reel_player_page",
+        "com.google.android.youtube:id/reel_player_view_layout",
+        "com.google.android.youtube:id/reel_player_title",
+        "com.google.android.youtube:id/reel_channel_name",
+        "com.google.android.youtube:id/shorts_container",
+        "com.google.android.youtube:id/reel_watch_fragment"
     )
 
-    private val IG_CAPTION_IDS = listOf(
-        "com.instagram.android:id/clips_caption",
-        "com.instagram.android:id/clips_video_caption",
-        "com.instagram.android:id/caption_text",
-        "com.instagram.android:id/reel_viewer_subtitle",
-        "com.instagram.android:id/row_feed_comment_textview_layout",
-        "com.instagram.android:id/secondary_label"
+    // Standard YouTube watch view IDs (not Shorts)
+    private val STANDARD_WATCH_IDS = listOf(
+        "com.google.android.youtube:id/watch_player",
+        "com.google.android.youtube:id/player_fragment_container",
+        "com.google.android.youtube:id/single_loop_player",
+        "com.google.android.youtube:id/movie_player",
+        "com.google.android.youtube:id/watch_panel"
     )
 
     private val YT_USERNAME_IDS = listOf(
         "com.google.android.youtube:id/reel_channel_name",
-        "com.google.android.youtube:id/channel_name",
-        "com.google.android.youtube:id/reel_player_channel_name",
-        "com.google.android.youtube:id/channel_title"
+        "com.google.android.youtube:id/reel_player_channel_name"
     )
 
     private val YT_CAPTION_IDS = listOf(
         "com.google.android.youtube:id/reel_player_title",
         "com.google.android.youtube:id/reel_description",
-        "com.google.android.youtube:id/title",
-        "com.google.android.youtube:id/video_title",
         "com.google.android.youtube:id/shorts_title"
     )
 
@@ -44,15 +47,63 @@ object ReelExtractor {
         "double tap to pause", "remix this reel", "watch again", "subscribe"
     )
 
-    fun extract(root: AccessibilityNodeInfo, pkg: String): Reel? {
-        val isIG = pkg == "com.instagram.android"
-        val userIds = if (isIG) IG_USERNAME_IDS else YT_USERNAME_IDS
-        val capIds = if (isIG) IG_CAPTION_IDS else YT_CAPTION_IDS
+    /**
+     * Verifies if the active window is the YouTube Shorts vertical player,
+     * rejecting regular watch player, search tabs, and feed lists.
+     */
+    fun isShortsActive(root: AccessibilityNodeInfo): Boolean {
+        // 1. Must contain at least one Shorts-specific container
+        var hasShortsContainer = false
+        for (id in SHORTS_CONTAINER_IDS) {
+            try {
+                val nodes = root.findAccessibilityNodeInfosByViewId(id)
+                if (nodes.isNotEmpty()) {
+                    hasShortsContainer = true
+                    break
+                }
+            } catch (_: Exception) {}
+        }
 
-        val username = firstTextByIds(root, userIds)
-        val caption = firstTextByIds(root, capIds)
+        if (!hasShortsContainer) {
+            return false
+        }
 
-        val raw = collectVisibleText(root)
+        // 2. Reject if standard watch view containers exist without active Shorts
+        for (id in STANDARD_WATCH_IDS) {
+            try {
+                val nodes = root.findAccessibilityNodeInfosByViewId(id)
+                if (nodes.isNotEmpty()) {
+                    // Check if Shorts recycler exists alongside; if not, reject
+                    val reelRecycler = root.findAccessibilityNodeInfosByViewId("com.google.android.youtube:id/reel_recycler")
+                    if (reelRecycler.isEmpty()) {
+                        return false
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        return true
+    }
+
+    /**
+     * Extracts Reel from the currently active, vertically settled Shorts item.
+     */
+    fun extract(root: AccessibilityNodeInfo, pkg: String, screenHeight: Int = 2400): Reel? {
+        if (!isShortsActive(root)) {
+            Log.d(TAG, "Extraction aborted: active window is not YouTube Shorts")
+            return null
+        }
+
+        // Find the active, vertically centered Shorts container
+        val activeContainer = findActiveSettledPage(root, screenHeight) ?: root
+
+        val username = firstTextByIds(activeContainer, YT_USERNAME_IDS)
+            ?: firstTextByIds(root, YT_USERNAME_IDS)
+
+        val caption = firstTextByIds(activeContainer, YT_CAPTION_IDS)
+            ?: firstTextByIds(root, YT_CAPTION_IDS)
+
+        val raw = collectVisibleText(activeContainer)
             .filter { text ->
                 val lower = text.lowercase()
                 !IGNORED_UI_TEXTS.contains(lower) &&
@@ -66,7 +117,7 @@ object ReelExtractor {
 
         val resolvedUsername = username
             ?: raw.firstOrNull { it.startsWith("@") }?.removePrefix("@")
-            ?: if (isIG) "instagram_creator" else "youtube_creator"
+            ?: "youtube_creator"
 
         val resolvedCaption = caption
             ?: raw.filter { it.length > 10 }.maxByOrNull { it.length }
@@ -76,12 +127,76 @@ object ReelExtractor {
             return null
         }
 
+        val isSponsored = detectSponsored(activeContainer, root)
+
         return Reel(
             username = resolvedUsername,
             caption = resolvedCaption,
             raw = raw,
-            pkg = pkg
+            pkg = pkg,
+            isSponsored = isSponsored
         )
+    }
+
+    /**
+     * Finds the Shorts page that is vertically centered and settled on screen.
+     * Prevents Bug 2: Returns null if user is midway through dragging/scrolling.
+     */
+    private fun findActiveSettledPage(root: AccessibilityNodeInfo, screenHeight: Int): AccessibilityNodeInfo? {
+        val pageNodes = root.findAccessibilityNodeInfosByViewId("com.google.android.youtube:id/reel_player_page")
+        if (pageNodes.isEmpty()) {
+            return null
+        }
+
+        val screenCenter = screenHeight / 2
+        val rect = Rect()
+
+        for (node in pageNodes) {
+            node.getBoundsInScreen(rect)
+            // A settled Short page covers the vertical center of the screen
+            // and is snapped (top is near the top edge)
+            val coversCenter = rect.top <= screenCenter && rect.bottom >= screenCenter
+            val isSettled = rect.top >= -screenHeight * 0.20f && rect.top <= screenHeight * 0.20f
+
+            if (coversCenter && isSettled) {
+                return node
+            }
+        }
+
+        return null
+    }
+
+    /**
+     * Detects if the Short is an advertisement or sponsored content.
+     */
+    private fun detectSponsored(activeContainer: AccessibilityNodeInfo, root: AccessibilityNodeInfo): Boolean {
+        val adIds = listOf(
+            "com.google.android.youtube:id/ad_badge",
+            "com.google.android.youtube:id/ad_view",
+            "com.google.android.youtube:id/sponsor_badge",
+            "com.google.android.youtube:id/promoted_badge",
+            "com.google.android.youtube:id/ad_headline",
+            "com.google.android.youtube:id/ad_tag"
+        )
+        for (id in adIds) {
+            try {
+                if (activeContainer.findAccessibilityNodeInfosByViewId(id).isNotEmpty() ||
+                    root.findAccessibilityNodeInfosByViewId(id).isNotEmpty()) {
+                    return true
+                }
+            } catch (_: Exception) {}
+        }
+
+        val texts = collectVisibleText(activeContainer)
+        return texts.any { t ->
+            val low = t.lowercase().trim()
+            low == "sponsored" ||
+            low.startsWith("sponsored ·") ||
+            low.startsWith("sponsored ") ||
+            low == "#ad" ||
+            low == "#sponsored" ||
+            low.contains("paid partnership")
+        }
     }
 
     private fun firstTextByIds(root: AccessibilityNodeInfo, ids: List<String>): String? {
@@ -90,9 +205,7 @@ object ReelExtractor {
                 val nodes = root.findAccessibilityNodeInfosByViewId(id)
                 val text = nodes.firstOrNull { !it.text.isNullOrBlank() }?.text?.toString()
                 if (!text.isNullOrBlank()) return text
-            } catch (e: Exception) {
-                // Ignore view ID lookup error
-            }
+            } catch (_: Exception) {}
         }
         return null
     }

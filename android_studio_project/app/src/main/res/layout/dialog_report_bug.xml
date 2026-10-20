@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@drawable/bg_card">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Report a Bug or Issue"
+        android:textColor="@color/brand_dark"
+        android:textSize="18sp"
+        android:fontFamily="sans-serif-medium" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reports are sent directly to the FeedTrainer founder dashboard for immediate review."
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:lineSpacingExtra="2dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Category selector -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="CATEGORY"
+        android:textColor="@color/brand_text_muted"
+        android:textSize="10sp"
+        android:letterSpacing="0.08"
+        android:layout_marginBottom="6dp" />
+
+    <Spinner
+        android:id="@+id/spinnerBugCategory"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_input_field"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Bug Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TITLE"
+        android:textColor="@color/brand_text_muted"
+        android:textSize="10sp"
+        android:letterSpacing="0.08"
+        android:layout_marginBottom="6dp" />
+
+    <EditText
+        android:id="@+id/etBugTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_input_field"
+        android:hint="Brief summary of the issue"
+        android:textColorHint="@color/text_muted"
+        android:textColor="@color/brand_dark"
+        android:textSize="13sp"
+        android:padding="12dp"
+        android:singleLine="true"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Bug Description -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DESCRIPTION / STEPS"
+        android:textColor="@color/brand_text_muted"
+        android:textSize="10sp"
+        android:letterSpacing="0.08"
+        android:layout_marginBottom="6dp" />
+
+    <EditText
+        android:id="@+id/etBugDescription"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_input_field"
+        android:hint="Explain what happened and what you were doing"
+        android:textColorHint="@color/text_muted"
+        android:textColor="@color/brand_dark"
+        android:textSize="13sp"
+        android:padding="12dp"
+        android:minLines="3"
+        android:maxLines="5"
+        android:inputType="textMultiLine"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Device Info auto-filled snippet -->
+    <TextView
+        android:id="@+id/tvDeviceDiagnostics"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/brand_text_muted"
+        android:textSize="10sp"
+        android:fontFamily="monospace"
+        android:background="@drawable/bg_stat_card"
+        android:padding="8dp"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Action buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancelBug"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="Cancel"
+            android:textColor="@color/text_secondary"
+            android:layout_marginEnd="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSubmitBug"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="Submit Report"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/brand_moss"
+            app:cornerRadius="20dp"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp" />
+    </LinearLayout>
+</LinearLayout>

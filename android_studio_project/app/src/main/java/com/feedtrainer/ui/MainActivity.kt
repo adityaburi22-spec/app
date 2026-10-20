@@ -4,30 +4,40 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.accessibility.AccessibilityManager
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
+import com.feedtrainer.BuildConfig
 import com.feedtrainer.R
 import com.feedtrainer.data.AppPreferences
 import com.feedtrainer.model.ActivityLogItem
+import com.feedtrainer.model.AppReleaseUpdate
+import com.feedtrainer.model.BugReport
 import com.feedtrainer.model.Reel
 import com.feedtrainer.network.SupabaseClient
 import com.feedtrainer.service.FeedBrain
 import com.feedtrainer.service.FeedTrainerService
-import com.feedtrainer.service.KeepAliveService
+import com.feedtrainer.util.AppUpdateManager
 import com.feedtrainer.util.OemKeepAliveHelper
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -51,11 +61,18 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var switchAutoLike: SwitchCompat
     private lateinit var tvAutoLikeSubtitle: TextView
+    private lateinit var switchLikeSponsored: SwitchCompat
+    private lateinit var tvLikeSponsoredSubtitle: TextView
     private lateinit var switchLikeToast: SwitchCompat
     private lateinit var switchFloatingWidget: SwitchCompat
     private lateinit var tvFloatingWidgetSubtitle: TextView
     private lateinit var tvGoalsList: TextView
     private lateinit var btnCustomizeGoals: MaterialButton
+
+    private lateinit var cardFounderDashboard: View
+    private lateinit var btnFounderInbox: MaterialButton
+    private lateinit var btnReportBug: MaterialButton
+    private lateinit var btnCheckUpdates: MaterialButton
 
     private lateinit var etTestCaption: EditText
     private lateinit var btnRunTest: MaterialButton
@@ -64,6 +81,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var layoutEmptyLogs: LinearLayout
     private lateinit var tvEmptyLogs: TextView
     private lateinit var containerLogs: LinearLayout
+
+    private var isUpdatePromptActive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         if (!enforceAccessControl()) return
         updateDashboard()
         checkSubscriptionWithServer()
+        checkForMandatoryUpdate(silent = true)
     }
 
     private fun enforceAccessControl(): Boolean {
@@ -141,11 +161,18 @@ class MainActivity : AppCompatActivity() {
 
         switchAutoLike = findViewById(R.id.switchAutoLike)
         tvAutoLikeSubtitle = findViewById(R.id.tvAutoLikeSubtitle)
+        switchLikeSponsored = findViewById(R.id.switchLikeSponsored)
+        tvLikeSponsoredSubtitle = findViewById(R.id.tvLikeSponsoredSubtitle)
         switchLikeToast = findViewById(R.id.switchLikeToast)
         switchFloatingWidget = findViewById(R.id.switchFloatingWidget)
         tvFloatingWidgetSubtitle = findViewById(R.id.tvFloatingWidgetSubtitle)
         tvGoalsList = findViewById(R.id.tvGoalsList)
         btnCustomizeGoals = findViewById(R.id.btnCustomizeGoals)
+
+        cardFounderDashboard = findViewById(R.id.cardFounderDashboard)
+        btnFounderInbox = findViewById(R.id.btnFounderInbox)
+        btnReportBug = findViewById(R.id.btnReportBug)
+        btnCheckUpdates = findViewById(R.id.btnCheckUpdates)
 
         etTestCaption = findViewById(R.id.etTestCaption)
         btnRunTest = findViewById(R.id.btnRunTest)
@@ -187,7 +214,16 @@ class MainActivity : AppCompatActivity() {
             prefs.isAutoLikeEnabled = isChecked
             Toast.makeText(
                 this,
-                if (isChecked) "Auto-like enabled for goal matching reels" else "Auto-like paused",
+                if (isChecked) "Auto-like enabled for goal matching shorts" else "Auto-like paused",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        switchLikeSponsored.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isLikeSponsoredEnabled = isChecked
+            Toast.makeText(
+                this,
+                if (isChecked) "Liking relevant sponsored shorts enabled" else "Sponsored shorts will be skipped (Default)",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -217,7 +253,6 @@ class MainActivity : AppCompatActivity() {
                         )
                         startActivity(intent)
                     } catch (e: Exception) {
-                        // Fallback generic overlay settings
                         startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
                     }
                 } else {
@@ -234,6 +269,18 @@ class MainActivity : AppCompatActivity() {
 
         btnCustomizeGoals.setOnClickListener {
             showGoalCustomizationDialog()
+        }
+
+        btnReportBug.setOnClickListener {
+            showBugReportDialog()
+        }
+
+        btnFounderInbox.setOnClickListener {
+            showFounderInboxDialog()
+        }
+
+        btnCheckUpdates.setOnClickListener {
+            checkForMandatoryUpdate(silent = false)
         }
 
         btnRunTest.setOnClickListener {
@@ -276,6 +323,7 @@ class MainActivity : AppCompatActivity() {
 
         // 4. Switches
         switchAutoLike.isChecked = prefs.isAutoLikeEnabled
+        switchLikeSponsored.isChecked = prefs.isLikeSponsoredEnabled
         switchLikeToast.isChecked = prefs.isLikeNotificationEnabled
 
         // 5. Floating widget
@@ -299,16 +347,20 @@ class MainActivity : AppCompatActivity() {
         val goals = prefs.goals
         tvGoalsList.text = goals.joinToString("\n") { "• $it" }
 
-        // 6. Account button
+        // 7. Founder check
+        val isFounder = prefs.userEmail?.equals(SupabaseClient.OWNER_EMAIL, ignoreCase = true) == true
+        cardFounderDashboard.visibility = if (isFounder) View.VISIBLE else View.GONE
+
+        // 8. Account button
         if (prefs.userEmail != null) {
             val shortName = prefs.userFullName?.split(" ")?.firstOrNull() ?: prefs.userEmail?.substringBefore("@")
-            val subBadge = if (prefs.isSubscribed) "★ Pro" else "Free"
+            val subBadge = if (isFounder) "Founder" else if (prefs.isSubscribed) "★ Pro" else "Free"
             btnAccount.text = "$shortName ($subBadge)"
         } else {
             btnAccount.text = "Sign In"
         }
 
-        // 7. Recent logs
+        // 9. Recent logs
         renderActivityLogs()
     }
 
@@ -353,6 +405,199 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showBugReportDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_report_bug, null)
+        val spinnerCategory = dialogView.findViewById<Spinner>(R.id.spinnerBugCategory)
+        val etTitle = dialogView.findViewById<EditText>(R.id.etBugTitle)
+        val etDesc = dialogView.findViewById<EditText>(R.id.etBugDescription)
+        val tvDiagnostics = dialogView.findViewById<TextView>(R.id.tvDeviceDiagnostics)
+        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancelBug)
+        val btnSubmit = dialogView.findViewById<MaterialButton>(R.id.btnSubmitBug)
+
+        val categories = listOf(
+            "YouTube Shorts Liking Issue",
+            "Slow Scroll Targeting",
+            "False Positive Like",
+            "Sponsored Content Not Skipped",
+            "Accessibility Service Stopped",
+            "UI & Design Feedback",
+            "Other Issue"
+        )
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, categories)
+        spinnerCategory.adapter = adapter
+
+        val deviceInfo = "Device: ${Build.MANUFACTURER.uppercase()} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT}) · App: v${BuildConfig.VERSION_NAME}"
+        tvDiagnostics.text = deviceInfo
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnSubmit.setOnClickListener {
+            val title = etTitle.text.toString().trim()
+            val desc = etDesc.text.toString().trim()
+            val category = spinnerCategory.selectedItem.toString()
+
+            if (title.isEmpty() || desc.isEmpty()) {
+                Toast.makeText(this, "Please provide a title and description", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            btnSubmit.isEnabled = false
+            btnSubmit.text = "Sending..."
+
+            val report = BugReport(
+                userEmail = prefs.userEmail ?: "anonymous@feedtrainer.app",
+                title = title,
+                category = category,
+                description = desc,
+                deviceInfo = deviceInfo,
+                appVersion = BuildConfig.VERSION_NAME
+            )
+
+            lifecycleScope.launch {
+                val ok = SupabaseClient.submitBugReport(report)
+                if (ok) {
+                    Toast.makeText(this@MainActivity, "Thank you! Bug report sent to founder.", Toast.LENGTH_LONG).show()
+                    dialog.dismiss()
+                } else {
+                    Toast.makeText(this@MainActivity, "Failed sending. Cached locally.", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun showFounderInboxDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_founder_inbox, null)
+        val tvReportCount = dialogView.findViewById<TextView>(R.id.tvFounderReportCount)
+        val progress = dialogView.findViewById<ProgressBar>(R.id.progressFounderReports)
+        val tvEmpty = dialogView.findViewById<TextView>(R.id.tvEmptyFounderReports)
+        val container = dialogView.findViewById<LinearLayout>(R.id.containerBugReports)
+        val btnRefresh = dialogView.findViewById<MaterialButton>(R.id.btnRefreshReports)
+        val btnClose = dialogView.findViewById<MaterialButton>(R.id.btnCloseFounderInbox)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        fun loadReports() {
+            progress.visibility = View.VISIBLE
+            container.removeAllViews()
+            tvEmpty.visibility = View.GONE
+            tvReportCount.text = "Fetching user reports..."
+
+            lifecycleScope.launch {
+                val reports = SupabaseClient.fetchBugReports()
+                progress.visibility = View.GONE
+
+                if (reports.isEmpty()) {
+                    tvEmpty.visibility = View.VISIBLE
+                    tvReportCount.text = "0 reports submitted"
+                } else {
+                    tvEmpty.visibility = View.GONE
+                    tvReportCount.text = "${reports.size} total reports from users"
+
+                    val inflater = LayoutInflater.from(this@MainActivity)
+                    val dateFormat = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault())
+
+                    for (r in reports) {
+                        val item = inflater.inflate(R.layout.item_bug_report, container, false)
+                        val tvCat = item.findViewById<TextView>(R.id.tvReportCategory)
+                        val tvTime = item.findViewById<TextView>(R.id.tvReportTime)
+                        val tvT = item.findViewById<TextView>(R.id.tvReportTitle)
+                        val tvD = item.findViewById<TextView>(R.id.tvReportDesc)
+                        val tvMeta = item.findViewById<TextView>(R.id.tvReportMeta)
+
+                        tvCat.text = r.category
+                        tvTime.text = dateFormat.format(Date(r.timestamp))
+                        tvT.text = r.title
+                        tvD.text = r.description
+                        tvMeta.text = "From: ${r.userEmail} · ${r.deviceInfo}"
+
+                        container.addView(item)
+                    }
+                }
+            }
+        }
+
+        btnRefresh.setOnClickListener { loadReports() }
+        btnClose.setOnClickListener { dialog.dismiss() }
+
+        loadReports()
+        dialog.show()
+    }
+
+    private fun checkForMandatoryUpdate(silent: Boolean) {
+        if (isUpdatePromptActive) return
+
+        lifecycleScope.launch {
+            if (!silent) {
+                Toast.makeText(this@MainActivity, "Checking for latest update...", Toast.LENGTH_SHORT).show()
+            }
+            val update = AppUpdateManager.checkForUpdate(BuildConfig.VERSION_NAME)
+            if (update != null) {
+                showUpdateModal(update)
+            } else if (!silent) {
+                Toast.makeText(this@MainActivity, "FeedTrainer is up to date (v${BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun showUpdateModal(update: AppReleaseUpdate) {
+        isUpdatePromptActive = true
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_mandatory_update, null)
+        val tvVersion = dialogView.findViewById<TextView>(R.id.tvUpdateVersion)
+        val tvNotes = dialogView.findViewById<TextView>(R.id.tvUpdateNotes)
+        val layoutProgress = dialogView.findViewById<LinearLayout>(R.id.layoutUpdateProgress)
+        val progressBar = dialogView.findViewById<ProgressBar>(R.id.progressUpdateDownload)
+        val tvStatus = dialogView.findViewById<TextView>(R.id.tvDownloadStatus)
+        val btnStart = dialogView.findViewById<MaterialButton>(R.id.btnStartUpdate)
+
+        tvVersion.text = "Update Available: ${update.tagName}"
+        tvNotes.text = update.releaseNotes
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false) // Mandatory per user request
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        btnStart.setOnClickListener {
+            btnStart.isEnabled = false
+            layoutProgress.visibility = View.VISIBLE
+            tvStatus.text = "Connecting and downloading APK..."
+
+            lifecycleScope.launch {
+                val apkFile = AppUpdateManager.downloadApk(this@MainActivity, update.downloadUrl) { pct ->
+                    progressBar.progress = pct
+                    tvStatus.text = "Downloading update... $pct%"
+                }
+
+                if (apkFile != null && apkFile.exists()) {
+                    tvStatus.text = "Download complete. Launching installer..."
+                    AppUpdateManager.installApk(this@MainActivity, apkFile)
+                } else {
+                    btnStart.isEnabled = true
+                    tvStatus.text = "Download failed. Please check internet connection."
+                    Toast.makeText(this@MainActivity, "Failed to download update APK", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
     private fun runClassifierTest() {
         val text = etTestCaption.text.toString().trim()
         if (text.isEmpty()) {
@@ -363,7 +608,7 @@ class MainActivity : AppCompatActivity() {
         tvTestResult.text = "Evaluating on-device AI model..."
 
         lifecycleScope.launch {
-            val testReel = Reel("sample_creator", text, listOf(text), "com.instagram.android")
+            val testReel = Reel("sample_creator", text, listOf(text), "com.google.android.youtube")
             val result = FeedBrain.classify(testReel, prefs.goals)
 
             val scorePercent = (result.score * 100).toInt()
@@ -419,7 +664,6 @@ class MainActivity : AppCompatActivity() {
                 prefs.goals = currentGoals
                 FeedBrain.updateGoals(this, currentGoals)
 
-                // Sync to Supabase if logged in
                 val token = prefs.authToken
                 if (!token.isNullOrBlank()) {
                     lifecycleScope.launch {

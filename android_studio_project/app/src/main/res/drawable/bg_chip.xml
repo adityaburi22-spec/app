@@ -1,8 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#0F2B26" />
-    <stroke android:width="1dp" android:color="#059669" />
-    <corners android:radius="20dp" />
-    <padding android:left="12dp" android:top="6dp" android:right="12dp" android:bottom="6dp" />
-</shape>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/brand_sage_light" />
+            <stroke android:width="1.5dp" android:color="@color/brand_moss" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/brand_cream" />
+            <stroke android:width="1dp" android:color="@color/brand_border" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+</selector>

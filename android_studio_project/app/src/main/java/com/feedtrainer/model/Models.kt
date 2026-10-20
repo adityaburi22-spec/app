@@ -4,7 +4,8 @@ data class Reel(
     val username: String,
     val caption: String,
     val raw: List<String>,
-    val pkg: String = ""
+    val pkg: String = "",
+    val isSponsored: Boolean = false
 )
 
 data class ClassificationResult(
@@ -30,4 +31,23 @@ data class UserSession(
     val fullName: String? = null,
     val plan: String? = null,
     val isSubscriber: Boolean = false
+)
+
+data class BugReport(
+    val id: String = java.util.UUID.randomUUID().toString(),
+    val userEmail: String,
+    val title: String,
+    val category: String,
+    val description: String,
+    val deviceInfo: String,
+    val appVersion: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+data class AppReleaseUpdate(
+    val tagName: String,
+    val versionName: String,
+    val releaseNotes: String,
+    val downloadUrl: String,
+    val isMandatory: Boolean = true
 )

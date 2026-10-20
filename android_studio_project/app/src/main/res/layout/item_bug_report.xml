@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_stat_card"
+    android:padding="14dp"
+    android:layout_marginBottom="10dp">
+
+    <!-- Top line: Category pill + timestamp -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="6dp">
+
+        <TextView
+            android:id="@+id/tvReportCategory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="YouTube Shorts"
+            android:textColor="@color/brand_moss_dark"
+            android:textSize="10sp"
+            android:letterSpacing="0.04"
+            android:fontFamily="sans-serif-medium"
+            android:background="@drawable/bg_status_active"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp" />
+
+        <TextView
+            android:id="@+id/tvReportTime"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Just now"
+            android:textColor="@color/brand_text_muted"
+            android:textSize="11sp"
+            android:gravity="end" />
+    </LinearLayout>
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/tvReportTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Liking repeated regular video"
+        android:textColor="@color/brand_dark"
+        android:textSize="14sp"
+        android:fontFamily="sans-serif-medium"
+        android:layout_marginBottom="4dp" />
+
+    <!-- Description -->
+    <TextView
+        android:id="@+id/tvReportDesc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="When watching regular video, it clicks like every 3 seconds..."
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:lineSpacingExtra="2dp"
+        android:layout_marginBottom="6dp" />
+
+    <!-- User email & Device info -->
+    <TextView
+        android:id="@+id/tvReportMeta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="From: user@example.com · Android 14 (Pixel 7)"
+        android:textColor="@color/brand_text_muted"
+        android:textSize="10sp"
+        android:fontFamily="monospace" />
+</LinearLayout>

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0B1120"
+    android:background="@color/brand_cream"
     android:fillViewport="true">
 
     <LinearLayout
@@ -13,23 +13,23 @@
         android:gravity="center_horizontal"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:paddingTop="56dp"
+        android:paddingTop="48dp"
         android:paddingBottom="40dp">
 
         <!-- Logo & Branding -->
         <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
             android:src="@drawable/feedtrainer_logo"
             android:scaleType="fitCenter"
-            android:layout_marginBottom="20dp" />
+            android:layout_marginBottom="16dp" />
 
         <TextView
             android:id="@+id/tvAuthTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Welcome Back"
-            android:textColor="#F1F5F9"
+            android:text="Welcome to BetterBrainX"
+            android:textColor="@color/brand_dark"
             android:textSize="24sp"
             android:fontFamily="sans-serif-medium"
             android:letterSpacing="-0.01" />
@@ -38,26 +38,26 @@
             android:id="@+id/tvAuthSubtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Sign in to sync your goals and stats"
-            android:textColor="#4B6580"
+            android:text="Sign in to sync your goals and steer your feed"
+            android:textColor="@color/text_secondary"
             android:textSize="13sp"
             android:gravity="center"
             android:layout_marginTop="6dp"
-            android:layout_marginBottom="32dp" />
+            android:layout_marginBottom="28dp" />
 
         <!-- Form Card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="22dp">
+                android:padding="24dp">
 
                 <!-- Full Name field (sign up only) -->
                 <TextView
@@ -65,7 +65,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="FULL NAME"
-                    android:textColor="#3A5070"
+                    android:textColor="@color/brand_text_muted"
                     android:textSize="10sp"
                     android:letterSpacing="0.1"
                     android:fontFamily="sans-serif-medium"
@@ -77,9 +77,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_input_field"
-                    android:hint="Aditya Jat"
-                    android:textColorHint="#2A3D55"
-                    android:textColor="#CBD5E1"
+                    android:hint="Aditya"
+                    android:textColorHint="@color/text_muted"
+                    android:textColor="@color/brand_dark"
                     android:textSize="14sp"
                     android:padding="14dp"
                     android:inputType="textPersonName"
@@ -91,7 +91,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="EMAIL ADDRESS"
-                    android:textColor="#3A5070"
+                    android:textColor="@color/brand_text_muted"
                     android:textSize="10sp"
                     android:letterSpacing="0.1"
                     android:fontFamily="sans-serif-medium"
@@ -103,8 +103,8 @@
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_input_field"
                     android:hint="name@example.com"
-                    android:textColorHint="#2A3D55"
-                    android:textColor="#CBD5E1"
+                    android:textColorHint="@color/text_muted"
+                    android:textColor="@color/brand_dark"
                     android:inputType="textEmailAddress"
                     android:textSize="14sp"
                     android:padding="14dp"
@@ -115,7 +115,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="PASSWORD"
-                    android:textColor="#3A5070"
+                    android:textColor="@color/brand_text_muted"
                     android:textSize="10sp"
                     android:letterSpacing="0.1"
                     android:fontFamily="sans-serif-medium"
@@ -127,8 +127,8 @@
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_input_field"
                     android:hint="••••••••"
-                    android:textColorHint="#2A3D55"
-                    android:textColor="#CBD5E1"
+                    android:textColorHint="@color/text_muted"
+                    android:textColor="@color/brand_dark"
                     android:inputType="textPassword"
                     android:textSize="14sp"
                     android:padding="14dp"
@@ -139,7 +139,7 @@
                     android:id="@+id/tvAuthError"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#EF4444"
+                    android:textColor="@color/status_red"
                     android:textSize="12sp"
                     android:layout_marginBottom="12dp"
                     android:lineSpacingExtra="2dp"
@@ -152,9 +152,9 @@
                     android:layout_height="50dp"
                     android:text="Sign In"
                     android:textSize="14sp"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/white"
                     android:fontFamily="sans-serif-medium"
-                    app:backgroundTint="#10B981"
+                    app:backgroundTint="@color/brand_moss"
                     app:cornerRadius="25dp" />
 
                 <!-- Toggle auth mode link -->
@@ -165,7 +165,8 @@
                     android:layout_gravity="center_horizontal"
                     android:layout_marginTop="16dp"
                     android:text="Don't have an account? Sign Up"
-                    android:textColor="#38BDF8"
+                    android:textColor="@color/brand_moss_dark"
+                    android:fontFamily="sans-serif-medium"
                     android:textSize="13sp" />
 
             </LinearLayout>
@@ -184,13 +185,13 @@
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_weight="1"
-                android:background="#1E2D3D" />
+                android:background="@color/brand_border" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="MEMBERSHIP"
-                android:textColor="#3A5070"
+                android:textColor="@color/brand_text_muted"
                 android:textSize="10sp"
                 android:letterSpacing="0.1"
                 android:paddingStart="12dp"
@@ -200,7 +201,7 @@
                 android:layout_width="0dp"
                 android:layout_height="1dp"
                 android:layout_weight="1"
-                android:background="#1E2D3D" />
+                android:background="@color/brand_border" />
         </LinearLayout>
 
         <!-- Buy on Website CTA -->
@@ -211,17 +212,17 @@
             android:layout_height="48dp"
             android:text="Purchase Plan on Website"
             android:textSize="13sp"
-            android:textColor="#38BDF8"
-            app:strokeColor="#1E2D3D"
-            app:strokeWidth="1dp"
-            app:backgroundTint="#00000000"
+            android:textColor="@color/brand_moss_dark"
+            app:strokeColor="@color/brand_border"
+            app:strokeWidth="1.5dp"
+            app:backgroundTint="@color/brand_card_bg"
             app:cornerRadius="24dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Already purchased? Sign in above to activate FeedTrainer."
-            android:textColor="#4B6580"
+            android:textColor="@color/text_muted"
             android:textSize="11sp"
             android:gravity="center"
             android:layout_marginTop="12dp" />

@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0B1120"
+    android:background="@color/brand_cream"
     android:fillViewport="true">
 
     <LinearLayout
@@ -19,13 +19,13 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingStart="20dp"
-            android:paddingEnd="16dp"
+            android:paddingEnd="20dp"
             android:paddingTop="20dp"
-            android:paddingBottom="12dp">
+            android:paddingBottom="14dp">
 
             <ImageView
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:src="@drawable/feedtrainer_logo"
                 android:scaleType="fitCenter" />
 
@@ -34,22 +34,22 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:layout_marginStart="10dp">
+                android:layout_marginStart="12dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="FeedTrainer"
-                    android:textColor="#F1F5F9"
-                    android:textSize="18sp"
-                    android:letterSpacing="0.01"
+                    android:textColor="@color/brand_dark"
+                    android:textSize="20sp"
+                    android:letterSpacing="-0.01"
                     android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Feed Steering · On-Device AI"
-                    android:textColor="#4B6580"
+                    android:text="by BetterBrainX · On-Device AI"
+                    android:textColor="@color/brand_text_muted"
                     android:textSize="11sp"
                     android:letterSpacing="0.02" />
             </LinearLayout>
@@ -61,10 +61,10 @@
                 android:layout_height="36dp"
                 android:text="Sign In"
                 android:textSize="12sp"
-                android:textColor="#10B981"
-                app:strokeColor="#10B981"
-                app:strokeWidth="1dp"
-                app:backgroundTint="#00000000"
+                android:textColor="@color/brand_moss_dark"
+                app:strokeColor="@color/brand_moss"
+                app:strokeWidth="1.5dp"
+                app:backgroundTint="@color/brand_card_bg"
                 app:cornerRadius="18dp"
                 android:paddingStart="14dp"
                 android:paddingEnd="14dp" />
@@ -78,10 +78,10 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginTop="4dp"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -95,7 +95,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="10dp">
+                    android:layout_marginBottom="12dp">
 
                     <!-- Pulsing dot indicator area -->
                     <FrameLayout
@@ -103,7 +103,6 @@
                         android:layout_height="32dp"
                         android:layout_marginEnd="12dp">
 
-                        <!-- Outer glow ring -->
                         <View
                             android:id="@+id/viewServiceGlow"
                             android:layout_width="32dp"
@@ -111,7 +110,6 @@
                             android:background="@drawable/dot_red"
                             android:alpha="0.2" />
 
-                        <!-- Inner dot -->
                         <View
                             android:id="@+id/viewServiceDot"
                             android:layout_width="14dp"
@@ -131,7 +129,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Accessibility Service: Off"
-                            android:textColor="#F1F5F9"
+                            android:textColor="@color/brand_dark"
                             android:textSize="15sp"
                             android:fontFamily="sans-serif-medium" />
 
@@ -140,7 +138,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Tap Enable to begin feed steering"
-                            android:textColor="#4B6580"
+                            android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
@@ -151,9 +149,9 @@
                         android:layout_height="38dp"
                         android:text="Enable"
                         android:textSize="12sp"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/white"
                         android:fontFamily="sans-serif-medium"
-                        app:backgroundTint="#10B981"
+                        app:backgroundTint="@color/brand_moss"
                         app:cornerRadius="19dp"
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp" />
@@ -163,7 +161,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#1E2D3D"
+                    android:background="@color/brand_border"
                     android:layout_marginBottom="12dp" />
 
                 <!-- Auto-like toggle row -->
@@ -171,7 +169,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -182,18 +181,18 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Auto-Steer Likes"
-                            android:textColor="#CBD5E1"
-                            android:textSize="13sp"
+                            android:text="Auto-Steer YouTube Shorts"
+                            android:textColor="@color/brand_dark"
+                            android:textSize="14sp"
                             android:fontFamily="sans-serif-medium" />
 
                         <TextView
                             android:id="@+id/tvAutoLikeSubtitle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="40 likes/day · 3.2s pacing · goal-aligned only"
-                            android:textColor="#3A5070"
-                            android:textSize="11sp"
+                            android:text="Automatically like shorts aligned with your goals"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp"
                             android:layout_marginTop="1dp" />
                     </LinearLayout>
 
@@ -208,8 +207,53 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#1E2D3D"
-                    android:layout_marginTop="12dp"
+                    android:background="@color/brand_border"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Like Sponsored Content toggle row (Default OFF) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Like Sponsored Content"
+                            android:textColor="@color/brand_dark"
+                            android:textSize="14sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <TextView
+                            android:id="@+id/tvLikeSponsoredSubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Allows liking relevant ads. Disabled by default."
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp"
+                            android:layout_marginTop="1dp" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/switchLikeSponsored"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="false" />
+                </LinearLayout>
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/brand_border"
                     android:layout_marginBottom="12dp" />
 
                 <!-- Like Notification / Toast toggle row (DISABLED by default) -->
@@ -229,15 +273,15 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Show 'Liked' Popup Toast"
-                            android:textColor="#CBD5E1"
-                            android:textSize="13sp"
+                            android:textColor="@color/brand_dark"
+                            android:textSize="14sp"
                             android:fontFamily="sans-serif-medium" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Shows a notification every time a reel is liked. Off by default."
-                            android:textColor="#3A5070"
+                            android:text="Brief notification when a reel is liked. Off by default."
+                            android:textColor="@color/text_secondary"
                             android:textSize="11sp"
                             android:layout_marginTop="1dp" />
                     </LinearLayout>
@@ -258,44 +302,44 @@
             android:orientation="horizontal"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="14dp">
 
             <!-- Scanned Stat -->
             <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="5dp"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#141E30">
+                android:layout_marginEnd="6dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/brand_card_bg">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:paddingTop="14dp"
-                    android:paddingBottom="14dp"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp">
+                    android:paddingTop="16dp"
+                    android:paddingBottom="16dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
 
                     <TextView
                         android:id="@+id/tvStatScanned"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0"
-                        android:textColor="#38BDF8"
+                        android:textColor="@color/brand_dark"
                         android:textSize="26sp"
                         android:fontFamily="sans-serif-medium" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Scanned"
-                        android:textColor="#3A5070"
+                        android:text="SCANNED"
+                        android:textColor="@color/brand_text_muted"
                         android:textSize="10sp"
-                        android:letterSpacing="0.05"
+                        android:letterSpacing="0.08"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -305,38 +349,38 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="5dp"
-                android:layout_marginEnd="5dp"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#141E30">
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/brand_card_bg">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:paddingTop="14dp"
-                    android:paddingBottom="14dp"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp">
+                    android:paddingTop="16dp"
+                    android:paddingBottom="16dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
 
                     <TextView
                         android:id="@+id/tvStatSteered"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0"
-                        android:textColor="#10B981"
+                        android:textColor="@color/brand_moss_dark"
                         android:textSize="26sp"
                         android:fontFamily="sans-serif-medium" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Steered"
-                        android:textColor="#3A5070"
+                        android:text="STEERED"
+                        android:textColor="@color/brand_text_muted"
                         android:textSize="10sp"
-                        android:letterSpacing="0.05"
+                        android:letterSpacing="0.08"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -346,32 +390,32 @@
                 android:id="@+id/cardDailyCap"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="5dp"
+                android:layout_weight="1.1"
+                android:layout_marginStart="6dp"
                 android:clickable="true"
                 android:focusable="true"
                 android:foreground="?android:attr/selectableItemBackground"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#141E30">
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/brand_card_bg">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center"
-                    android:paddingTop="14dp"
-                    android:paddingBottom="14dp"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp">
+                    android:paddingTop="16dp"
+                    android:paddingBottom="16dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
 
                     <TextView
                         android:id="@+id/tvStatDailyCap"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0/40"
-                        android:textColor="#F59E0B"
-                        android:textSize="26sp"
+                        android:textColor="@color/accent_amber"
+                        android:textSize="24sp"
                         android:fontFamily="sans-serif-medium" />
 
                     <LinearLayout
@@ -384,33 +428,34 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Daily Cap"
-                            android:textColor="#3A5070"
+                            android:text="DAILY CAP"
+                            android:textColor="@color/brand_text_muted"
                             android:textSize="10sp"
-                            android:letterSpacing="0.05" />
+                            android:letterSpacing="0.08" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text=" ✏️"
-                            android:textColor="#10B981"
+                            android:textColor="@color/brand_moss"
                             android:textSize="9sp" />
                     </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>
 
-        <!-- ══════════════════ BATTERY ANTI-KILL CARD ══════════════════ -->
+        <!-- ══════════════════ FOUNDER DASHBOARD CARD (VISIBLE FOR ADITYA) ══════════════════ -->
         <androidx.cardview.widget.CardView
-            android:id="@+id/cardOemProtection"
+            android:id="@+id/cardFounderDashboard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            android:layout_marginBottom="14dp"
+            android:visibility="gone"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_blush">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -419,7 +464,70 @@
                 android:gravity="center_vertical"
                 android:padding="16dp">
 
-                <!-- Shield icon area -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="👑"
+                    android:textSize="22sp"
+                    android:layout_marginEnd="12dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Founder Dashboard"
+                        android:textColor="@color/brand_dark"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvFounderSubtitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="View user bug reports and system diagnostics"
+                        android:textColor="@color/brand_text_muted"
+                        android:textSize="11sp"
+                        android:layout_marginTop="1dp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFounderInbox"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="Bug Inbox"
+                    android:textSize="12sp"
+                    android:textColor="@color/white"
+                    app:backgroundTint="@color/brand_moss"
+                    app:cornerRadius="18dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ══════════════════ BATTERY ANTI-KILL CARD ══════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardOemProtection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="18dp">
+
                 <ImageView
                     android:layout_width="38dp"
                     android:layout_height="38dp"
@@ -440,16 +548,16 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Anti-Kill Shield"
-                        android:textColor="#E2E8F0"
-                        android:textSize="13sp"
+                        android:textColor="@color/brand_dark"
+                        android:textSize="14sp"
                         android:fontFamily="sans-serif-medium" />
 
                     <TextView
                         android:id="@+id/tvOemSubtitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Configure to prevent battery killers"
-                        android:textColor="#4B6580"
+                        android:text="Configure to prevent background termination"
+                        android:textColor="@color/text_secondary"
                         android:textSize="11sp"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
@@ -459,12 +567,12 @@
                     style="@style/Widget.Material3.Button.OutlinedButton"
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
-                    android:text="Fix"
+                    android:text="Optimize"
                     android:textSize="12sp"
-                    android:textColor="#38BDF8"
-                    app:strokeColor="#38BDF8"
-                    app:strokeWidth="1dp"
-                    app:backgroundTint="#00000000"
+                    android:textColor="@color/brand_moss_dark"
+                    app:strokeColor="@color/brand_moss"
+                    app:strokeWidth="1.5dp"
+                    app:backgroundTint="@color/brand_card_bg"
                     app:cornerRadius="18dp"
                     android:paddingStart="14dp"
                     android:paddingEnd="14dp" />
@@ -478,16 +586,16 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="18dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -513,17 +621,17 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Floating On-Screen Widget"
-                            android:textColor="#E2E8F0"
-                            android:textSize="13sp"
+                            android:text="Floating Screen Widget"
+                            android:textColor="@color/brand_dark"
+                            android:textSize="14sp"
                             android:fontFamily="sans-serif-medium" />
 
                         <TextView
                             android:id="@+id/tvFloatingWidgetSubtitle"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Always-on small circle widget with app icon"
-                            android:textColor="#4B6580"
+                            android:text="Always-on bubble to view live steering status"
+                            android:textColor="@color/text_secondary"
                             android:textSize="11sp"
                             android:layout_marginTop="2dp" />
                     </LinearLayout>
@@ -543,18 +651,17 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="20dp">
 
-                <!-- Header row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -567,10 +674,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Your Life Goals"
-                        android:textColor="#F1F5F9"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif-medium"
-                        android:letterSpacing="0.01" />
+                        android:textColor="@color/brand_dark"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif-medium" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCustomizeGoals"
@@ -579,25 +685,93 @@
                         android:layout_height="32dp"
                         android:text="Edit"
                         android:textSize="11sp"
-                        android:textColor="#10B981"
-                        app:strokeColor="#064E3B"
-                        app:strokeWidth="1dp"
-                        app:backgroundTint="#00000000"
+                        android:textColor="@color/brand_moss_dark"
+                        app:strokeColor="@color/brand_border"
+                        app:strokeWidth="1.5dp"
+                        app:backgroundTint="@color/brand_card_bg"
                         app:cornerRadius="16dp"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp" />
                 </LinearLayout>
 
-                <!-- Goals list -->
                 <TextView
                     android:id="@+id/tvGoalsList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="• Coding, AI &amp; Software\n• Gym, Fitness &amp; Nutrition\n• Investing &amp; Business\n• Deep Work &amp; Mindset"
-                    android:textColor="#34D399"
+                    android:textColor="@color/brand_moss_dark"
                     android:textSize="13sp"
                     android:lineSpacingExtra="5dp"
                     android:fontFamily="sans-serif" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ══════════════════ BUG REPORT & UPDATE ACTIONS ══════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="App Support &amp; Updates"
+                    android:textColor="@color/brand_dark"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginBottom="4dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Report issues directly to founder or update to latest release"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    android:layout_marginBottom="14dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnReportBug"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:text="Report Bug"
+                        android:textSize="12sp"
+                        android:textColor="@color/brand_dark"
+                        app:strokeColor="@color/brand_border"
+                        app:strokeWidth="1.5dp"
+                        app:backgroundTint="@color/brand_cream"
+                        app:cornerRadius="21dp"
+                        android:layout_marginEnd="6dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCheckUpdates"
+                        android:layout_width="0dp"
+                        android:layout_height="42dp"
+                        android:layout_weight="1"
+                        android:text="Check Updates"
+                        android:textSize="12sp"
+                        android:textColor="@color/white"
+                        app:backgroundTint="@color/brand_moss"
+                        app:cornerRadius="21dp"
+                        android:layout_marginStart="6dp" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -607,18 +781,17 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="12dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            android:layout_marginBottom="14dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="20dp">
 
-                <!-- Title row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -631,7 +804,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="AI Brain Tester"
-                        android:textColor="#F1F5F9"
+                        android:textColor="@color/brand_dark"
                         android:textSize="14sp"
                         android:fontFamily="sans-serif-medium" />
 
@@ -639,11 +812,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="ON-DEVICE"
-                        android:textColor="#10B981"
+                        android:textColor="@color/status_green"
                         android:textSize="9sp"
                         android:letterSpacing="0.1"
                         android:fontFamily="sans-serif-medium"
-                        android:background="@drawable/bg_pill_green"
+                        android:background="@drawable/bg_status_active"
                         android:paddingStart="8dp"
                         android:paddingEnd="8dp"
                         android:paddingTop="3dp"
@@ -653,29 +826,27 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Test how the embedding model classifies any caption"
-                    android:textColor="#4B6580"
+                    android:text="Test how the scoring engine classifies any caption"
+                    android:textColor="@color/text_secondary"
                     android:textSize="11sp"
                     android:layout_marginBottom="12dp" />
 
-                <!-- Input field -->
                 <EditText
                     android:id="@+id/etTestCaption"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_input_field"
                     android:hint="e.g., Build a neural network from scratch in PyTorch"
-                    android:textColorHint="#2A3D55"
-                    android:textColor="#CBD5E1"
+                    android:textColorHint="@color/text_muted"
+                    android:textColor="@color/brand_dark"
                     android:textSize="13sp"
                     android:padding="14dp"
                     android:inputType="textMultiLine"
                     android:minLines="2"
                     android:maxLines="3"
                     android:imeOptions="actionDone"
-                    android:layout_marginBottom="10dp" />
+                    android:layout_marginBottom="12dp" />
 
-                <!-- Action row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -688,9 +859,9 @@
                         android:layout_height="38dp"
                         android:text="Classify"
                         android:textSize="12sp"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/white"
                         android:fontFamily="sans-serif-medium"
-                        app:backgroundTint="#3B82F6"
+                        app:backgroundTint="@color/brand_moss"
                         app:cornerRadius="19dp"
                         android:paddingStart="18dp"
                         android:paddingEnd="18dp" />
@@ -702,7 +873,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="12dp"
                         android:text="Result will appear here"
-                        android:textColor="#2A3D55"
+                        android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:lineSpacingExtra="2dp" />
                 </LinearLayout>
@@ -715,18 +886,17 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="28dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#141E30">
+            android:layout_marginBottom="32dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/brand_card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:padding="20dp">
 
-                <!-- Header -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -738,8 +908,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Steered Reels"
-                        android:textColor="#F1F5F9"
+                        android:text="Steered Shorts"
+                        android:textColor="@color/brand_dark"
                         android:textSize="14sp"
                         android:fontFamily="sans-serif-medium" />
 
@@ -747,11 +917,11 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="LIVE"
-                        android:textColor="#10B981"
+                        android:textColor="@color/status_green"
                         android:textSize="9sp"
                         android:letterSpacing="0.1"
                         android:fontFamily="sans-serif-medium"
-                        android:background="@drawable/bg_pill_green"
+                        android:background="@drawable/bg_status_active"
                         android:paddingStart="8dp"
                         android:paddingEnd="8dp"
                         android:paddingTop="3dp"
@@ -772,8 +942,8 @@
                         android:id="@+id/tvEmptyLogs"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="No reels steered yet"
-                        android:textColor="#2A3D55"
+                        android:text="No shorts steered yet"
+                        android:textColor="@color/brand_text_muted"
                         android:textSize="13sp"
                         android:fontFamily="sans-serif-medium"
                         android:gravity="center" />
@@ -782,7 +952,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Open YouTube Shorts\nto begin live feed steering"
-                        android:textColor="#1E2D3D"
+                        android:textColor="@color/text_secondary"
                         android:textSize="11sp"
                         android:gravity="center"
                         android:layout_marginTop="4dp"

@@ -48,6 +48,10 @@ class AppPreferences(context: Context) {
         get() = prefs.getBoolean("like_notification_enabled", false) // DISABLED BY DEFAULT per user request
         set(value) = prefs.edit().putBoolean("like_notification_enabled", value).apply()
 
+    var isLikeSponsoredEnabled: Boolean
+        get() = prefs.getBoolean("like_sponsored_enabled", false) // DEFAULT FALSE per user request
+        set(value) = prefs.edit().putBoolean("like_sponsored_enabled", value).apply()
+
     var isFloatingWidgetEnabled: Boolean
         get() = prefs.getBoolean("floating_widget_enabled", false)
         set(value) = prefs.edit().putBoolean("floating_widget_enabled", value).apply()

@@ -7,6 +7,7 @@ import android.content.Context
 import android.util.Log
 import com.feedtrainer.model.ClassificationResult
 import com.feedtrainer.model.Reel
+import com.feedtrainer.util.Translator
 import java.nio.LongBuffer
 import kotlin.math.sqrt
 
@@ -135,8 +136,7 @@ object FeedBrain {
         }
     }
 
-    // Words that immediately disqualify a reel regardless of embedding score.
-    // These are slang/entertainment signals with zero educational value.
+    // Hard block terms that immediately disqualify regardless of other signals
     private val HARD_BLOCK_TERMS = setOf(
         "brainrot", "brain rot", "skibidi", "sigma", "rizz", "rizzler",
         "ohio", "sussy", "slay queen", "no cap fr fr", "bussin",
@@ -149,9 +149,28 @@ object FeedBrain {
         "reaction", "fanboy", "stan", "celeb drama", "tea ☕"
     )
 
+    // High-value educational intent signals (boost score)
+    private val EDUCATIONAL_INTENT_SIGNALS = listOf(
+        "how to", "tutorial", "explained", "deep dive", "step by step",
+        "architecture", "under the hood", "best practice", "roadmap",
+        "cheat sheet", "guide", "concept", "build a", "how it works",
+        "learn", "mistakes to avoid", "pro tip", "algorithm", "tutorial for beginners"
+    )
+
+    // Bait signals that penalize score
+    private val CLICKBAIT_SIGNALS = listOf(
+        "omg", "you won't believe", "wait till the end", "secret rich people",
+        "dropshipping", "100x return", "make millions", "passive income easily",
+        "literally me", "rage bait", "clout"
+    )
+
+    private val QUALITY_CREATOR_TOKENS = listOf("dev", "code", "coder", "tech", "eng", "learn", "science", "fit", "invest")
+    private val JUNK_CREATOR_TOKENS = listOf("meme", "viral", "clip", "tiktok", "daily", "reaction", "repost", "fun")
+
     fun classify(reel: Reel, userGoals: List<String>): ClassificationResult {
-        // === HARD BLOCK: immediate NOT_INTERESTED for known brainrot ===
         val captionLower = "${reel.username} ${reel.caption}".lowercase()
+
+        // 1. HARD BLOCK: Immediate NOT_INTERESTED for brainrot / meme traps
         if (HARD_BLOCK_TERMS.any { captionLower.contains(it) }) {
             return ClassificationResult("NOT_INTERESTED", 0.05f, null)
         }
@@ -161,19 +180,21 @@ object FeedBrain {
         }
 
         return try {
-            val translatedCaption = if (com.feedtrainer.util.Translator.isLikelyNonEnglish(reel.caption)) {
-                com.feedtrainer.util.Translator.translateToEnglish(reel.caption)
+            val translatedCaption = if (Translator.isLikelyNonEnglish(reel.caption)) {
+                Translator.translateToEnglish(reel.caption)
             } else {
                 ""
             }
+
             val queryText = if (translatedCaption.isNotEmpty()) {
                 "${reel.username}. ${reel.caption}. $translatedCaption".take(512)
             } else {
                 "${reel.username}. ${reel.caption}".take(512)
             }
+
             val v = embed(queryText)
 
-            var bestScore = -1f
+            var bestDot = -1f
             var bestGoalIndex = -1
 
             for (i in goalVecs.indices) {
@@ -183,18 +204,40 @@ object FeedBrain {
                 for (d in 0 until len) {
                     dot += g[d] * v[d]
                 }
-                if (dot > bestScore) {
-                    bestScore = dot
+                if (dot > bestDot) {
+                    bestDot = dot
                     bestGoalIndex = i
                 }
+            }
+
+            // Multi-Factor Adjustment
+            val fullText = "$queryText $captionLower"
+            var finalScore = bestDot
+
+            // Educational intent boost
+            if (EDUCATIONAL_INTENT_SIGNALS.any { fullText.contains(it) }) {
+                finalScore += 0.10f
+            }
+
+            // Clickbait penalty
+            if (CLICKBAIT_SIGNALS.any { fullText.contains(it) }) {
+                finalScore -= 0.15f
+            }
+
+            // Creator name weighting
+            val uLower = reel.username.lowercase()
+            if (QUALITY_CREATOR_TOKENS.any { uLower.contains(it) }) {
+                finalScore += 0.06f
+            } else if (JUNK_CREATOR_TOKENS.any { uLower.contains(it) }) {
+                finalScore -= 0.12f
             }
 
             val matchedGoal = if (bestGoalIndex in activeGoals.indices) activeGoals[bestGoalIndex] else null
 
             when {
-                bestScore >= LIKE_T -> ClassificationResult("LIKE", bestScore, matchedGoal)
-                bestScore <= NI_T -> ClassificationResult("NOT_INTERESTED", bestScore, null)
-                else -> ClassificationResult("SKIP", bestScore, matchedGoal)
+                finalScore >= LIKE_T -> ClassificationResult("LIKE", finalScore, matchedGoal)
+                finalScore <= NI_T -> ClassificationResult("NOT_INTERESTED", finalScore, null)
+                else -> ClassificationResult("SKIP", finalScore, matchedGoal)
             }
         } catch (e: Exception) {
             Log.w(TAG, "ONNX classify error; using keyword filter fallback", e)

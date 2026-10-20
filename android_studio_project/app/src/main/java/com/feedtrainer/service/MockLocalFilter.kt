@@ -6,11 +6,6 @@ import com.feedtrainer.util.Translator
 
 object MockLocalFilter {
 
-    /**
-     * Hard-block terms: Any caption containing these words is immediately classified as
-     * NOT_INTERESTED regardless of any goal keyword hits. These represent slang, entertainment
-     * content, and low-value dopamine bait with zero educational alignment.
-     */
     private val HARD_BLOCK_TERMS = setOf(
         "brainrot", "brain rot", "skibidi", "sigma", "rizz", "rizzler",
         "ohio", "sussy", "slay queen", "no cap fr fr", "bussin",
@@ -29,7 +24,22 @@ object MockLocalFilter {
         "sigma", "rizz", "skibidi", "brainrot", "viral", "meme", "trend"
     )
 
-    // Expanded with tech terms (including 2-letter tokens like ai, ml, js, ts, go, git) and multilingual terms
+    private val EDUCATIONAL_INTENT_SIGNALS = listOf(
+        "how to", "tutorial", "explained", "deep dive", "step by step",
+        "architecture", "under the hood", "best practice", "roadmap",
+        "cheat sheet", "guide", "concept", "build a", "how it works",
+        "learn", "mistakes to avoid", "pro tip", "algorithm", "tutorial for beginners"
+    )
+
+    private val CLICKBAIT_SIGNALS = listOf(
+        "omg", "you won't believe", "wait till the end", "secret rich people",
+        "dropshipping", "100x return", "make millions", "passive income easily",
+        "literally me", "rage bait"
+    )
+
+    private val QUALITY_CREATOR_TOKENS = listOf("dev", "code", "coder", "tech", "eng", "learn", "science", "fit", "invest")
+    private val JUNK_CREATOR_TOKENS = listOf("meme", "viral", "clip", "tiktok", "daily", "reaction", "repost", "fun")
+
     private val GOAL_KEYWORD_MAP = mapOf(
         "Coding, AI, and Software Engineering" to listOf(
             "code", "coding", "programmer", "developer", "software", "python", "javascript",
@@ -40,7 +50,6 @@ object MockLocalFilter {
             "rust", "golang", "go", "c++", "linux", "terminal", "vscode", "nextjs", "nodejs", "html", "css",
             "web", "app", "dev", "build", "tutorial", "interview", "engineer", "engineering", "chatgpt", "gemini",
             "claude", "agent", "bug", "debugging",
-            // Multilingual:
             "programacion", "programación", "código", "desarrollo", "desarrollador",
             "développeur", "programmation", "informatique",
             "कोडिंग", "प्रोग्रामिंग", "सॉफ्टवेयर", "डेवलपर",
@@ -50,7 +59,6 @@ object MockLocalFilter {
             "science", "physics", "quantum", "math", "mathematics", "calculus", "astronomy",
             "space", "engineering", "biology", "chemistry", "neuroscience", "robotics", "invention",
             "research", "experiment", "hypothesis", "discovery", "theory", "simulation", "tech", "nasa",
-            // Multilingual:
             "ciencia", "física", "matemáticas", "astronomía", "química", "robótica",
             "nauka", "physique", "chimie", "sciences",
             "विज्ञान", "भौतिकी", "गणित", "खगोल",
@@ -61,7 +69,6 @@ object MockLocalFilter {
             "exercise", "strength", "lifting", "squat", "bench", "deadlift", "diet", "nutrition",
             "calisthenics", "mobility", "cardio", "health", "training", "macros",
             "calories", "progressive overload", "sleep recovery",
-            // Multilingual:
             "gimnasio", "ejercicio", "musculación", "entrenamiento", "pesas",
             "musculation", "muscles", "santé",
             "जिम", "कसरत", "व्यायाम", "बॉडीबिल्डिंग", "फिटनेस",
@@ -71,7 +78,6 @@ object MockLocalFilter {
             "investing", "stocks", "finance", "money", "business", "entrepreneur", "startup",
             "wealth", "real estate", "passive income", "revenue", "sales", "crypto", "bitcoin",
             "economy", "market", "portfolio", "dividend", "cash flow", "valuation", "compound",
-            // Multilingual:
             "inversión", "inversiones", "finanzas", "dinero", "negocios", "bolsa",
             "argent", "finances", "bourse", "investissement",
             "निवेश", "शेयर बाजार", "व्यापार", "पैसे", "फाइनेंस",
@@ -82,7 +88,6 @@ object MockLocalFilter {
             "mindset", "stoic", "stoicism", "philosophy", "psychology", "learning", "study",
             "morning routine", "self-improvement", "journaling", "meditation", "atomic habits",
             "flow state", "deliberate practice", "ikigai", "resilience",
-            // Multilingual:
             "libros", "lectura", "productividad", "disciplina", "filosofía", "estoicismo",
             "livres", "lecture", "productivité",
             "किताबें", "पढ़ाई", "अनुशासन", "ध्यान", "चिंतन",
@@ -125,26 +130,43 @@ object MockLocalFilter {
             }
         }
 
-        // 3. Check junk keywords
+        // 3. Educational intent & clickbait signals
+        val hasEducationalIntent = EDUCATIONAL_INTENT_SIGNALS.any { text.contains(it) }
+        val hasClickbait = CLICKBAIT_SIGNALS.any { text.contains(it) }
+
+        // 4. Creator name scoring
+        val uLower = reel.username.lowercase()
+        val isQualityCreator = QUALITY_CREATOR_TOKENS.any { uLower.contains(it) }
+        val isJunkCreator = JUNK_CREATOR_TOKENS.any { uLower.contains(it) }
+
+        // 5. Check junk keywords
         val junkHits = DEFAULT_JUNK_KEYWORDS.count { kw ->
             if (kw.contains(" ")) text.contains(kw) else words.contains(kw)
         }
 
+        var baseScore = 0.25f
+
+        if (maxHits >= 2) {
+            baseScore = 0.55f + (maxHits * 0.07f).coerceAtMost(0.35f)
+        } else if (maxHits >= 1) {
+            baseScore = 0.50f
+        }
+
+        if (hasEducationalIntent) baseScore += 0.08f
+        if (isQualityCreator) baseScore += 0.05f
+        if (hasClickbait) baseScore -= 0.15f
+        if (isJunkCreator) baseScore -= 0.12f
+        if (junkHits > 0) baseScore -= (junkHits * 0.10f)
+
         return when {
-            // Strong match: 2+ goal keywords and more than junk hits
-            maxHits >= 2 && maxHits >= junkHits -> {
-                val score = 0.55f + (maxHits * 0.08f).coerceAtMost(0.40f)
-                ClassificationResult("LIKE", score, bestGoal)
+            baseScore >= 0.48f && maxHits >= 1 -> {
+                ClassificationResult("LIKE", baseScore, bestGoal)
             }
-            // Friendly single match for tech/coding with 0 junk signals
-            maxHits >= 1 && junkHits == 0 -> {
-                ClassificationResult("LIKE", 0.52f, bestGoal)
-            }
-            junkHits >= 1 && maxHits == 0 -> {
-                ClassificationResult("NOT_INTERESTED", 0.10f, null)
+            baseScore <= 0.15f || (junkHits >= 2 && maxHits == 0) -> {
+                ClassificationResult("NOT_INTERESTED", baseScore, null)
             }
             else -> {
-                ClassificationResult("SKIP", 0.25f, null)
+                ClassificationResult("SKIP", baseScore, null)
             }
         }
     }
