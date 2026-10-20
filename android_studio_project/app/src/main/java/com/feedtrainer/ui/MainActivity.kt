@@ -47,8 +47,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvStatScanned: TextView
     private lateinit var tvStatSteered: TextView
     private lateinit var tvStatDailyCap: TextView
+    private lateinit var cardDailyCap: View
 
     private lateinit var switchAutoLike: SwitchCompat
+    private lateinit var tvAutoLikeSubtitle: TextView
     private lateinit var switchLikeToast: SwitchCompat
     private lateinit var switchFloatingWidget: SwitchCompat
     private lateinit var tvFloatingWidgetSubtitle: TextView
@@ -135,8 +137,10 @@ class MainActivity : AppCompatActivity() {
         tvStatScanned = findViewById(R.id.tvStatScanned)
         tvStatSteered = findViewById(R.id.tvStatSteered)
         tvStatDailyCap = findViewById(R.id.tvStatDailyCap)
+        cardDailyCap = findViewById(R.id.cardDailyCap)
 
         switchAutoLike = findViewById(R.id.switchAutoLike)
+        tvAutoLikeSubtitle = findViewById(R.id.tvAutoLikeSubtitle)
         switchLikeToast = findViewById(R.id.switchLikeToast)
         switchFloatingWidget = findViewById(R.id.switchFloatingWidget)
         tvFloatingWidgetSubtitle = findViewById(R.id.tvFloatingWidgetSubtitle)
@@ -169,6 +173,14 @@ class MainActivity : AppCompatActivity() {
 
         btnOemGuide.setOnClickListener {
             startActivity(Intent(this, OemGuideActivity::class.java))
+        }
+
+        cardDailyCap.setOnClickListener {
+            showDailyCapDialog()
+        }
+
+        tvAutoLikeSubtitle.setOnClickListener {
+            showDailyCapDialog()
         }
 
         switchAutoLike.setOnCheckedChangeListener { _, isChecked ->
@@ -260,6 +272,7 @@ class MainActivity : AppCompatActivity() {
         tvStatScanned.text = prefs.totalReelsScanned.toString()
         tvStatSteered.text = prefs.totalReelsSteered.toString()
         tvStatDailyCap.text = "${prefs.actionsToday} / ${prefs.dailyLikeCap}"
+        tvAutoLikeSubtitle.text = "${prefs.dailyLikeCap} likes/day · 3.2s pacing · goal-aligned only"
 
         // 4. Switches
         switchAutoLike.isChecked = prefs.isAutoLikeEnabled
@@ -448,6 +461,50 @@ class MainActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun showDailyCapDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_edit_daily_cap, null)
+        val etCustomCap = dialogView.findViewById<EditText>(R.id.etCustomCap)
+        val btnPreset20 = dialogView.findViewById<MaterialButton>(R.id.btnPreset20)
+        val btnPreset40 = dialogView.findViewById<MaterialButton>(R.id.btnPreset40)
+        val btnPreset75 = dialogView.findViewById<MaterialButton>(R.id.btnPreset75)
+        val btnPreset100 = dialogView.findViewById<MaterialButton>(R.id.btnPreset100)
+        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancelCap)
+        val btnSave = dialogView.findViewById<MaterialButton>(R.id.btnSaveCap)
+
+        etCustomCap.setText(prefs.dailyLikeCap.toString())
+        etCustomCap.setSelection(etCustomCap.text.length)
+
+        btnPreset20.setOnClickListener { etCustomCap.setText("20"); etCustomCap.setSelection(2) }
+        btnPreset40.setOnClickListener { etCustomCap.setText("40"); etCustomCap.setSelection(2) }
+        btnPreset75.setOnClickListener { etCustomCap.setText("75"); etCustomCap.setSelection(2) }
+        btnPreset100.setOnClickListener { etCustomCap.setText("100"); etCustomCap.setSelection(3) }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        btnCancel.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        btnSave.setOnClickListener {
+            val input = etCustomCap.text.toString().trim()
+            val parsed = input.toIntOrNull()
+            if (parsed == null || parsed < 5 || parsed > 500) {
+                Toast.makeText(this, "Please enter a valid limit between 5 and 500", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            prefs.dailyLikeCap = parsed
+            updateDashboard()
+            Toast.makeText(this, "Daily like cap set to $parsed likes/day", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun showAccountDialog() {

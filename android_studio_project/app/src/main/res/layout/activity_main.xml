@@ -188,9 +188,10 @@
                             android:fontFamily="sans-serif-medium" />
 
                         <TextView
+                            android:id="@+id/tvAutoLikeSubtitle"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="40 likes/day · 4s pacing · goal-aligned only"
+                            android:text="40 likes/day · 3.2s pacing · goal-aligned only"
                             android:textColor="#3A5070"
                             android:textSize="11sp"
                             android:layout_marginTop="1dp" />
@@ -340,12 +341,16 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Daily Cap Stat -->
+            <!-- Daily Cap Stat (Clickable to edit) -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardDailyCap"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="5dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="0dp"
                 app:cardBackgroundColor="#141E30">
@@ -369,14 +374,28 @@
                         android:textSize="26sp"
                         android:fontFamily="sans-serif-medium" />
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Daily Cap"
-                        android:textColor="#3A5070"
-                        android:textSize="10sp"
-                        android:letterSpacing="0.05"
-                        android:layout_marginTop="2dp" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="2dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Daily Cap"
+                            android:textColor="#3A5070"
+                            android:textSize="10sp"
+                            android:letterSpacing="0.05" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=" ✏️"
+                            android:textColor="#10B981"
+                            android:textSize="9sp" />
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>
