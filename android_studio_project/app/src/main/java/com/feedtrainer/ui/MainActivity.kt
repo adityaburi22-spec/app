@@ -74,6 +74,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (isFinishing) return
         if (!enforceAccessControl()) return
         updateDashboard()
         checkSubscriptionWithServer()
@@ -81,19 +82,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun enforceAccessControl(): Boolean {
         if (prefs.userId.isNullOrBlank() || prefs.authToken.isNullOrBlank()) {
-            val intent = Intent(this, AuthActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            startActivity(intent)
+            startActivity(Intent(this, AuthActivity::class.java))
             finish()
             return false
         }
 
         if (!prefs.isSubscribed) {
-            val intent = Intent(this, PaywallActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            startActivity(intent)
+            startActivity(Intent(this, PaywallActivity::class.java))
             finish()
             return false
         }

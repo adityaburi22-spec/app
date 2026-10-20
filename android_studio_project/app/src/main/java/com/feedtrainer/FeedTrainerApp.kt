@@ -30,14 +30,5 @@ class FeedTrainerApp : Application() {
                 Log.e("FeedTrainerApp", "FeedBrain initialization warning: ${e.message}")
             }
         }
-
-        // Start KeepAlive foreground service if enabled
-        if (prefs.isKeepAliveEnabled) {
-            try {
-                KeepAliveService.start(this)
-            } catch (e: Exception) {
-                Log.e("FeedTrainerApp", "Failed to start KeepAliveService during app launch", e)
-            }
-        }
     }
 }
