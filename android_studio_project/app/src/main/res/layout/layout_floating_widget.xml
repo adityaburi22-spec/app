@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootFloatingWidget"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
     android:padding="6dp">
 
+    <!-- The Circular Logo Bubble -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardBubble"
-        android:layout_width="54dp"
-        android:layout_height="54dp"
-        app:cardCornerRadius="27dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        app:cardCornerRadius="26dp"
         app:cardElevation="8dp"
         app:cardBackgroundColor="#0F172A">
 
@@ -29,12 +32,51 @@
 
                 <ImageView
                     android:id="@+id/ivWidgetLogo"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
                     android:layout_gravity="center"
                     android:src="@drawable/feedtrainer_logo"
                     android:scaleType="fitCenter" />
             </FrameLayout>
         </FrameLayout>
     </androidx.cardview.widget.CardView>
-</FrameLayout>
+
+    <!-- Clean Home Feed Quick-Action Pill -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardCleanHomePill"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:layout_marginStart="8dp"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="6dp"
+        app:cardBackgroundColor="#0F172A">
+
+        <LinearLayout
+            android:id="@+id/btnQuickCleanHome"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="@drawable/bg_clean_pill">
+
+            <TextView
+                android:id="@+id/tvCleanPillIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🧹"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/tvCleanPillLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Clean Home"
+                android:textColor="#34D399"
+                android:textSize="12sp"
+                android:fontFamily="sans-serif-medium"
+                android:layout_marginStart="5dp" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</LinearLayout>

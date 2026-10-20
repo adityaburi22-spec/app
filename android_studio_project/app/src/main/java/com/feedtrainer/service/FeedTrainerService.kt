@@ -40,6 +40,10 @@ class FeedTrainerService : AccessibilityService() {
         @Volatile
         var isServiceRunning = false
             private set
+
+        @Volatile
+        var instance: FeedTrainerService? = null
+            private set
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -58,6 +62,7 @@ class FeedTrainerService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         isServiceRunning = true
+        instance = this
         prefs = AppPreferences(applicationContext)
         channelMemory = ChannelMemoryStore.getInstance(applicationContext)
         Log.i(TAG, "FeedTrainer 4-Layer Steering Pipeline connected for YouTube Shorts")
@@ -178,14 +183,14 @@ class FeedTrainerService : AccessibilityService() {
                 )
             )
             // Dopamine Dimmer: count this as junk
-            FeedPurityTracker.record(applicationContext, isHighSignal = false)
+            FeedPurityTracker.record(applicationContext, isHighSignal = false, category = "Clickbait")
             DopamineDimmer.onVideoClassified(applicationContext, isHighSignal = false, prefs.isDopamineDimmerEnabled)
             return
         }
 
         if (channelMemory.isBlacklisted(handle)) {
             Log.d(TAG, "[$handle] Channel blacklisted in local memory (3+ fast swipes / unlikes) -> Skipped")
-            FeedPurityTracker.record(applicationContext, isHighSignal = false)
+            FeedPurityTracker.record(applicationContext, isHighSignal = false, category = "Blacklisted Channel")
             DopamineDimmer.onVideoClassified(applicationContext, isHighSignal = false, prefs.isDopamineDimmerEnabled)
             return
         }
@@ -221,7 +226,11 @@ class FeedTrainerService : AccessibilityService() {
             val isHighSignal = result.decision == "LIKE"
 
             // ─── Feed Purity Tracking ─────────────────────────────────────────────
-            FeedPurityTracker.record(applicationContext, isHighSignal = isHighSignal)
+            FeedPurityTracker.record(
+                applicationContext,
+                isHighSignal = isHighSignal,
+                category = result.matchedGoal ?: if (isHighSignal) "High-Signal" else "Brainrot"
+            )
 
             // ─── Dopamine Dimmer ──────────────────────────────────────────────────
             DopamineDimmer.onVideoClassified(applicationContext, isHighSignal, prefs.isDopamineDimmerEnabled)
@@ -290,9 +299,19 @@ class FeedTrainerService : AccessibilityService() {
         pendingDwellJob?.cancel()
     }
 
+    fun triggerManualHomeSweep(onComplete: ((Int) -> Unit)? = null) {
+        val root = rootInActiveWindow
+        if (root == null) {
+            onComplete?.invoke(0)
+            return
+        }
+        HomeFeedSweeper.sweep(this, root, isEnabled = true, onComplete = onComplete)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         isServiceRunning = false
+        instance = null
         pendingDwellJob?.cancel()
         DopamineDimmer.reset(applicationContext)
         HomeFeedSweeper.reset()

@@ -60,12 +60,31 @@ data class AppReleaseUpdate(
     val isMandatory: Boolean = true
 )
 
+enum class DashboardTimeframe(val hours: Int, val label: String) {
+    H24(24, "24H"),
+    H48(48, "48H"),
+    D7(7 * 24, "7D"),
+    D30(30 * 24, "30D"),
+    ALL(365 * 24, "All")
+}
+
 /**
- * One data point for the 48-Hour Signal Shift Dashboard.
+ * One data point for the Algorithmic Signal Shift Dashboard.
  */
 data class FeedPurityPoint(
     val timestamp: Long,
-    val isHighSignal: Boolean // true = LIKE, false = SKIP/NOT_INTERESTED
+    val isHighSignal: Boolean, // true = LIKE, false = SKIP/NOT_INTERESTED
+    val category: String = "General" // matched niche e.g. "Coding & AI", or "Brainrot" / "Clickbait"
+)
+
+data class DashboardMetrics(
+    val totalClassified: Int,
+    val highSignalCount: Int,
+    val slopSuppressedCount: Int,
+    val currentPurityPercent: Int,
+    val initialPurityPercent: Int,
+    val shiftDeltaPercent: Int,
+    val nicheBreakdown: Map<String, Int>
 )
 
 data class ChannelReputation(

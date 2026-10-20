@@ -2,53 +2,53 @@ package com.feedtrainer.ui
 
 import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.provider.Settings
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
 
 /**
  * Dopamine Dimmer — Neuro-Behavioral Nudge Overlay
  *
- * When the classification pipeline detects 3 consecutive brainrot/noise videos,
- * gradually fades the screen to greyscale/dim WITHOUT locking the user out.
- * When a high-signal educational video appears, snaps back to full vivid color.
+ * When the classification pipeline detects 3 consecutive brainrot/junk videos,
+ * gradually fades a subtle monochrome/dimming overlay over the screen and fires
+ * an authentic gentle haptic tick — WITHOUT ever locking the user out.
  *
- * Mechanism: A touch-transparent full-screen overlay view with a ColorMatrix filter
- * that varies between fully transparent (color, alpha=0) and a soft greyscale dim (alpha~0.55).
+ * The instant a high-signal educational video appears, snaps back to full vibrant color.
  *
- * Why it works: Bright colors trigger dopamine. Draining color saturation makes
- * junk content feel boring to the brain — without ever restricting user control.
+ * Why it works: Bright colors trigger dopamine. Draining saturation and brightness on
+ * junk videos makes ragebait boring to the human brain without ever taking control away.
  */
 object DopamineDimmer {
 
     private const val TAG = "DopamineDimmer"
 
-    // State
     private var consecutiveBrainrotCount = 0
-    private const val BRAINROT_THRESHOLD = 3 // Trigger dimming after 3 consecutive junk videos
-    private const val DIM_ANIM_DURATION_MS = 1200L
-    private const val SNAP_ANIM_DURATION_MS = 600L
+    private const val BRAINROT_THRESHOLD = 3
+    private const val DIM_ANIM_DURATION_MS = 1000L
+    private const val SNAP_ANIM_DURATION_MS = 250L
 
     private val mainHandler = Handler(Looper.getMainLooper())
-    private var overlayView: View? = null
+    private var overlayRoot: FrameLayout? = null
     private var windowManager: WindowManager? = null
-    private var currentDimAlpha = 0f // 0 = full color, 1.0 = full greyscale dim
+    private var currentDimAlpha = 0f
     private var dimAnimator: ValueAnimator? = null
 
     /**
-     * Called by FeedTrainerService when a new video is classified.
-     * @param isHighSignal True if the video was classified as LIKE/goal-aligned.
-     * @param context Application context.
-     * @param isDopamineDimmerEnabled User preference toggle.
+     * Called by FeedTrainerService when a video is classified.
      */
     fun onVideoClassified(context: Context, isHighSignal: Boolean, isDopamineDimmerEnabled: Boolean) {
         if (!isDopamineDimmerEnabled) {
@@ -58,26 +58,32 @@ object DopamineDimmer {
         }
 
         if (isHighSignal) {
-            // Snap back to full vivid color immediately
+            val wasDimmed = currentDimAlpha > 0.05f
             consecutiveBrainrotCount = 0
             animateDim(context, targetAlpha = 0f, duration = SNAP_ANIM_DURATION_MS)
-            Log.d(TAG, "High-signal video detected → Snapping back to full color")
+
+            if (wasDimmed) {
+                triggerSnapHaptic(context)
+                Log.d(TAG, "High-signal educational video detected → Snapped back to vibrant full color")
+            }
         } else {
             consecutiveBrainrotCount++
             Log.d(TAG, "Brainrot streak: $consecutiveBrainrotCount consecutive junk videos")
 
             if (consecutiveBrainrotCount >= BRAINROT_THRESHOLD) {
-                // Gradually increase dim level, capped at 0.55 (soft greyscale, not pitch black)
-                val streakExtra = ((consecutiveBrainrotCount - BRAINROT_THRESHOLD) * 0.06f).coerceAtMost(0.20f)
-                val targetAlpha = (0.50f + streakExtra).coerceAtMost(0.68f)
+                // Trigger gentle haptic tick on 3rd consecutive junk video
+                if (consecutiveBrainrotCount == BRAINROT_THRESHOLD) {
+                    triggerGentleHaptic(context)
+                }
+
+                // Smoothly dim screen (capped at 0.62 for readability without blacking out)
+                val extra = ((consecutiveBrainrotCount - BRAINROT_THRESHOLD) * 0.05f).coerceAtMost(0.12f)
+                val targetAlpha = (0.50f + extra).coerceAtMost(0.62f)
                 animateDim(context, targetAlpha = targetAlpha, duration = DIM_ANIM_DURATION_MS)
             }
         }
     }
 
-    /**
-     * Resets streak counter (e.g. when service starts or user changes app).
-     */
     fun reset(context: Context) {
         consecutiveBrainrotCount = 0
         animateDim(context, targetAlpha = 0f, duration = SNAP_ANIM_DURATION_MS)
@@ -89,8 +95,7 @@ object DopamineDimmer {
                 if (!Settings.canDrawOverlays(context)) return@post
 
                 if (targetAlpha <= 0.01f) {
-                    // Just fade out and dismiss
-                    if (overlayView != null) {
+                    if (overlayRoot != null) {
                         dimAnimator?.cancel()
                         dimAnimator = ValueAnimator.ofFloat(currentDimAlpha, 0f).apply {
                             this.duration = duration
@@ -98,7 +103,7 @@ object DopamineDimmer {
                             addUpdateListener { anim ->
                                 val alpha = anim.animatedValue as Float
                                 currentDimAlpha = alpha
-                                overlayView?.alpha = alpha
+                                overlayRoot?.alpha = alpha
                             }
                             addListener(object : android.animation.AnimatorListenerAdapter() {
                                 override fun onAnimationEnd(animation: android.animation.Animator) {
@@ -113,9 +118,8 @@ object DopamineDimmer {
                     return@post
                 }
 
-                // Ensure overlay is created
                 ensureOverlay(context)
-                val view = overlayView ?: return@post
+                val root = overlayRoot ?: return@post
 
                 dimAnimator?.cancel()
                 dimAnimator = ValueAnimator.ofFloat(currentDimAlpha, targetAlpha).apply {
@@ -124,45 +128,72 @@ object DopamineDimmer {
                     addUpdateListener { anim ->
                         val alpha = anim.animatedValue as Float
                         currentDimAlpha = alpha
-                        applyGreyscaleFilter(view, alpha)
+                        root.alpha = alpha
                     }
                     start()
                 }
-                Log.d(TAG, "Animating dim: ${currentDimAlpha} → $targetAlpha over ${duration}ms")
             } catch (e: Exception) {
-                Log.e(TAG, "Error animating dim overlay", e)
+                Log.e(TAG, "Error animating dopamine dim overlay", e)
             }
         }
     }
 
-    private fun applyGreyscaleFilter(view: View, intensity: Float) {
-        // intensity = 0.0 → full color (no overlay needed, just set alpha 0)
-        // intensity = 0.68 → soft greyscale dim
-        view.alpha = intensity
-
-        // Apply a desaturating ColorMatrix as the view's draw layer paint
-        val saturation = 1f - intensity // 0 = greyscale, 1 = full color
-        val colorMatrix = ColorMatrix()
-        colorMatrix.setSaturation(saturation.coerceIn(0f, 1f))
-        val paint = Paint()
-        paint.colorFilter = ColorMatrixColorFilter(colorMatrix)
-        view.setLayerType(View.LAYER_TYPE_HARDWARE, paint)
-    }
-
     private fun ensureOverlay(context: Context) {
-        if (overlayView != null) return
+        if (overlayRoot != null) return
 
         try {
             val wm = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager ?: return
             windowManager = wm
 
-            val view = View(context)
-            view.setBackgroundColor(android.graphics.Color.parseColor("#1A000000")) // very dark translucent
+            val root = FrameLayout(context).apply {
+                // Dark slate desaturating wash
+                setBackgroundColor(Color.parseColor("#B80B1120"))
+                alpha = 0f
+            }
 
-            val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            // Top indicator pill (completely touch-transparent)
+            val dp = context.resources.displayMetrics.density
+            val pillLayout = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER
+                setPadding((14 * dp).toInt(), (6 * dp).toInt(), (14 * dp).toInt(), (6 * dp).toInt())
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(Color.parseColor("#CC1E293B"))
+                    cornerRadius = 16 * dp
+                    setStroke((1 * dp).toInt(), Color.parseColor("#334155"))
+                }
+            }
+
+            val tvIcon = TextView(context).apply {
+                text = "🎭"
+                textSize = 12f
+            }
+            val tvText = TextView(context).apply {
+                text = " Dopamine Dimmer • Slop streak ($consecutiveBrainrotCount)"
+                textSize = 11f
+                setTextColor(Color.parseColor("#94A3B8"))
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            pillLayout.addView(tvIcon)
+            pillLayout.addView(tvText)
+
+            val pillParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+                topMargin = (44 * dp).toInt()
+            }
+            root.addView(pillLayout, pillParams)
+
+            val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.TYPE_PHONE
+            }
 
+            // Strictly non-touchable, non-focusable
             val params = WindowManager.LayoutParams(
                 WindowManager.LayoutParams.MATCH_PARENT,
                 WindowManager.LayoutParams.MATCH_PARENT,
@@ -174,22 +205,63 @@ object DopamineDimmer {
                 PixelFormat.TRANSLUCENT
             )
 
-            view.alpha = 0f // start invisible
-            wm.addView(view, params)
-            overlayView = view
-            Log.d(TAG, "Dopamine Dimmer overlay created")
+            wm.addView(root, params)
+            overlayRoot = root
+            Log.d(TAG, "Dopamine Dimmer overlay created with non-blocking pass-through")
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating dim overlay", e)
+            Log.e(TAG, "Error creating dopamine dim overlay", e)
         }
     }
 
     private fun dismissOverlay(context: Context) {
         try {
-            val v = overlayView ?: return
-            (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.removeView(v)
+            val v = overlayRoot ?: return
+            windowManager?.removeView(v)
         } catch (_: Exception) {}
-        overlayView = null
+        overlayRoot = null
         currentDimAlpha = 0f
-        Log.d(TAG, "Dopamine Dimmer overlay dismissed")
+    }
+
+    private fun triggerGentleHaptic(context: Context) {
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vm?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (vibrator?.hasVibrator() == true) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(35L, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(35L)
+                }
+                Log.d(TAG, "Gentle haptic tick emitted on 3rd brainrot video")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Haptic trigger failed", e)
+        }
+    }
+
+    private fun triggerSnapHaptic(context: Context) {
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vm?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+            if (vibrator?.hasVibrator() == true) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 18, 35, 18), -1))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator.vibrate(25L)
+                }
+            }
+        } catch (_: Exception) {}
     }
 }

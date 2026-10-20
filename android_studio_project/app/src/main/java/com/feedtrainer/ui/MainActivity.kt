@@ -28,6 +28,7 @@ import com.feedtrainer.data.FeedPurityTracker
 import com.feedtrainer.model.ActivityLogItem
 import com.feedtrainer.model.AppReleaseUpdate
 import com.feedtrainer.model.BugReport
+import com.feedtrainer.model.DashboardTimeframe
 import com.feedtrainer.model.Reel
 import com.feedtrainer.network.SupabaseClient
 import com.feedtrainer.service.FeedBrain
@@ -97,6 +98,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var progressCalibration: ProgressBar
     private lateinit var chartFeedPurity: FeedPurityChartView
     private lateinit var tvPurityBadge: TextView
+    private lateinit var btnTf24H: TextView
+    private lateinit var btnTf48H: TextView
+    private lateinit var btnTf7D: TextView
+    private lateinit var btnTf30D: TextView
+    private lateinit var btnTfAll: TextView
+    private lateinit var tvMetricHighSignal: TextView
+    private lateinit var tvMetricSlop: TextView
+    private lateinit var tvMetricShiftDelta: TextView
+    private lateinit var tvNicheBreakdown: TextView
+    private var selectedTimeframe = DashboardTimeframe.H48
 
     // Top update banner views
     private lateinit var cardUpdateBanner: View
@@ -242,6 +253,15 @@ class MainActivity : AppCompatActivity() {
         progressCalibration = findViewById(R.id.progressCalibration)
         chartFeedPurity = findViewById(R.id.chartFeedPurity)
         tvPurityBadge = findViewById(R.id.tvPurityBadge)
+        btnTf24H = findViewById(R.id.btnTf24H)
+        btnTf48H = findViewById(R.id.btnTf48H)
+        btnTf7D = findViewById(R.id.btnTf7D)
+        btnTf30D = findViewById(R.id.btnTf30D)
+        btnTfAll = findViewById(R.id.btnTfAll)
+        tvMetricHighSignal = findViewById(R.id.tvMetricHighSignal)
+        tvMetricSlop = findViewById(R.id.tvMetricSlop)
+        tvMetricShiftDelta = findViewById(R.id.tvMetricShiftDelta)
+        tvNicheBreakdown = findViewById(R.id.tvNicheBreakdown)
 
         // Top update banner
         cardUpdateBanner = findViewById(R.id.cardUpdateBanner)
@@ -450,6 +470,21 @@ class MainActivity : AppCompatActivity() {
             progressCalibration.visibility = View.GONE
             tvCalibrationStatus.text = "Calibration stopped"
         }
+
+        // Timeframe selector listeners
+        val tfButtons = listOf(
+            btnTf24H to DashboardTimeframe.H24,
+            btnTf48H to DashboardTimeframe.H48,
+            btnTf7D to DashboardTimeframe.D7,
+            btnTf30D to DashboardTimeframe.D30,
+            btnTfAll to DashboardTimeframe.ALL
+        )
+        for ((btn, tf) in tfButtons) {
+            btn.setOnClickListener {
+                selectedTimeframe = tf
+                updateFeedPurityChart()
+            }
+        }
     }
 
     private fun updateDashboard() {
@@ -537,10 +572,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateFeedPurityChart() {
-        val buckets = com.feedtrainer.data.FeedPurityTracker.getHourlyBuckets(this, hours = 48)
-        chartFeedPurity.setBuckets(buckets)
-        val ratio = com.feedtrainer.data.FeedPurityTracker.getOverallPurityRatio(this, hours = 48)
-        val pct = (ratio * 100).toInt()
+        btnTf24H.isSelected = selectedTimeframe == DashboardTimeframe.H24
+        btnTf48H.isSelected = selectedTimeframe == DashboardTimeframe.H48
+        btnTf7D.isSelected = selectedTimeframe == DashboardTimeframe.D7
+        btnTf30D.isSelected = selectedTimeframe == DashboardTimeframe.D30
+        btnTfAll.isSelected = selectedTimeframe == DashboardTimeframe.ALL
+
+        val buckets = FeedPurityTracker.getBuckets(this, selectedTimeframe)
+        chartFeedPurity.setBuckets(buckets, selectedTimeframe)
+
+        val metrics = FeedPurityTracker.getMetrics(this, selectedTimeframe)
+        val overallRatio = FeedPurityTracker.getOverallPurityRatio(this, selectedTimeframe)
+        val pct = (overallRatio * 100).toInt()
+
         tvPurityBadge.text = "$pct% High-Signal"
         tvPurityBadge.setTextColor(getColor(
             when {
@@ -549,6 +593,26 @@ class MainActivity : AppCompatActivity() {
                 else -> R.color.status_red
             }
         ))
+
+        tvMetricHighSignal.text = metrics.highSignalCount.toString()
+        tvMetricSlop.text = metrics.slopSuppressedCount.toString()
+
+        val sign = if (metrics.shiftDeltaPercent >= 0) "+" else ""
+        tvMetricShiftDelta.text = "$sign${metrics.shiftDeltaPercent}%"
+        tvMetricShiftDelta.setTextColor(getColor(
+            if (metrics.shiftDeltaPercent >= 0) R.color.status_green else R.color.status_red
+        ))
+
+        if (metrics.nicheBreakdown.isNotEmpty()) {
+            val totalHigh = metrics.highSignalCount.coerceAtLeast(1)
+            val breakdownStr = metrics.nicheBreakdown.entries
+                .sortedByDescending { it.value }
+                .take(3)
+                .joinToString(", ") { "${it.key} (${(it.value * 100 / totalHigh)}%)" }
+            tvNicheBreakdown.text = "🎯 Steered Niches: $breakdownStr"
+        } else {
+            tvNicheBreakdown.text = "🎯 Niche Steered: Calibrating against your chosen goals"
+        }
     }
 
     private fun renderActivityLogs() {

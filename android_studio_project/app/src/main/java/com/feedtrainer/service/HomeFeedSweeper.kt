@@ -1,11 +1,6 @@
 package com.feedtrainer.service
 
 import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.GestureDescription
-import android.graphics.Path
-import android.graphics.Rect
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import kotlinx.coroutines.CoroutineScope
@@ -17,45 +12,48 @@ import kotlinx.coroutines.launch
 /**
  * HomeFeedSweeper — "Not Interested" Automation for YouTube Home Tab
  *
- * When the user enables "Clean Home Feed" mode, this sweeper reads the YouTube
- * Home tab video card titles and automatically:
- * 1. Scans upcoming video card titles via AccessibilityNodeInfo
- * 2. Matches against the brainrot/junk classifier
- * 3. Opens the 3-dot menu (⋮) on junk cards and clicks "Not interested" in <200ms
- *
- * Does NOT operate during Shorts (FeedTrainerService handles those).
+ * When enabled or triggered manually from the floating bubble:
+ * 1. Scans upcoming video card titles in the YouTube Home feed
+ * 2. Matches against clickbait and brainrot filters
+ * 3. Opens the 3-dot menu (⋮) and clicks "Not interested" in <150ms
  */
 object HomeFeedSweeper {
 
     private const val TAG = "HomeFeedSweeper"
 
-    // YouTube Home tab view IDs
+    // YouTube Home tab video title view IDs
     private val HOME_VIDEO_CARD_IDS = listOf(
         "com.google.android.youtube:id/title",
         "com.google.android.youtube:id/video_title",
         "com.google.android.youtube:id/compact_video_title",
-        "com.google.android.youtube:id/watch_while_title"
+        "com.google.android.youtube:id/watch_while_title",
+        "com.google.android.youtube:id/grid_video_title"
     )
 
-    // 3-dot overflow menu button IDs for home feed cards
+    // 3-dot overflow menu button IDs across YouTube versions
     private val OVERFLOW_BUTTON_IDS = listOf(
         "com.google.android.youtube:id/menu_item_overflow",
         "com.google.android.youtube:id/overflow_button",
         "com.google.android.youtube:id/compact_video_more_button",
-        "com.google.android.youtube:id/inlined_activity_overflow_button"
+        "com.google.android.youtube:id/inlined_activity_overflow_button",
+        "com.google.android.youtube:id/menu_anchor",
+        "com.google.android.youtube:id/action_menu_item_child_icon",
+        "com.google.android.youtube:id/contextual_menu_anchor"
     )
 
-    // "Not interested" menu item text patterns
+    // Multilingual "Not interested" menu item terms
     private val NOT_INTERESTED_TERMS = listOf(
         "not interested",
         "no me interesa",
         "pas intéressé",
         "nicht interessiert",
         "non mi interessa",
-        "não tenho interesse"
+        "não tenho interesse",
+        "दिलचस्पी नहीं है",
+        "興味がない"
     )
 
-    // Brainrot and junk terms to mark as not interested
+    // Junk and clickbait terms for YouTube home feed
     private val HOME_JUNK_TERMS = setOf(
         "brainrot", "brain rot", "skibidi", "sigma", "rizz", "prank gone wrong",
         "drama exposed", "celebrity exposed", "exposed", "shocking fight", "beef",
@@ -70,36 +68,40 @@ object HomeFeedSweeper {
     )
 
     private var sweepJob: Job? = null
-    private var sweepScope = CoroutineScope(Dispatchers.Main)
-    private var lastSweptIds = mutableSetOf<String>() // prevent double-acting on same card
+    private val sweepScope = CoroutineScope(Dispatchers.Main)
+    private val lastSweptIds = mutableSetOf<String>()
     private var actionsThisSweep = 0
-    private const val MAX_SWEEP_ACTIONS = 8 // max "Not Interested" per sweep pass
+    private const val MAX_SWEEP_ACTIONS = 6
 
-    /**
-     * Called from FeedTrainerService when YouTube Home tab is active.
-     * Schedules a non-blocking background sweep of the current view hierarchy.
-     */
     fun sweep(
         svc: AccessibilityService,
         root: AccessibilityNodeInfo,
-        isEnabled: Boolean
+        isEnabled: Boolean,
+        onComplete: ((Int) -> Unit)? = null
     ) {
-        if (!isEnabled) return
-        if (sweepJob?.isActive == true) return // Only one sweep at a time
+        if (!isEnabled) {
+            onComplete?.invoke(0)
+            return
+        }
+        if (sweepJob?.isActive == true) {
+            Log.d(TAG, "Sweep already in progress, skipping")
+            return
+        }
 
         sweepJob = sweepScope.launch {
             try {
-                performSweep(svc, root)
+                val sweptCount = performSweep(svc, root)
+                onComplete?.invoke(sweptCount)
             } catch (e: Exception) {
                 Log.e(TAG, "Error during home feed sweep", e)
+                onComplete?.invoke(0)
             }
         }
     }
 
-    private suspend fun performSweep(svc: AccessibilityService, root: AccessibilityNodeInfo) {
+    private suspend fun performSweep(svc: AccessibilityService, root: AccessibilityNodeInfo): Int {
         actionsThisSweep = 0
 
-        // Collect all video title nodes on screen
         val titleNodes = mutableListOf<AccessibilityNodeInfo>()
         for (id in HOME_VIDEO_CARD_IDS) {
             try {
@@ -108,9 +110,9 @@ object HomeFeedSweeper {
             } catch (_: Exception) {}
         }
 
-        if (titleNodes.isEmpty()) return
+        if (titleNodes.isEmpty()) return 0
 
-        Log.d(TAG, "HomeFeedSweeper: found ${titleNodes.size} video title cards to scan")
+        Log.d(TAG, "HomeFeedSweeper: Found ${titleNodes.size} candidate cards to inspect")
 
         for (titleNode in titleNodes) {
             if (actionsThisSweep >= MAX_SWEEP_ACTIONS) break
@@ -122,63 +124,62 @@ object HomeFeedSweeper {
             val isJunk = isJunkContent(titleText)
             if (!isJunk) continue
 
-            Log.d(TAG, "HomeFeedSweeper: marking as Not Interested → \"${titleText.take(60)}\"")
+            Log.d(TAG, "HomeFeedSweeper: Suppressing junk card -> \"${titleText.take(50)}\"")
             lastSweptIds.add(cardKey)
 
-            // Find the parent video card container that holds the overflow button
             val cardContainer = findParentCard(titleNode)
-
-            // Find the 3-dot overflow button within the card container
             val overflowButton = findOverflowButton(cardContainer ?: root)
+
             if (overflowButton != null) {
                 val clicked = overflowButton.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 if (clicked) {
-                    delay(180) // Wait for menu to open
+                    // Ultra-fast <150ms menu detection & click
+                    delay(70) // Quick wait for popup menu attach
 
-                    // Now find and click "Not interested" in the opened menu
-                    val freshRoot = svc.rootInActiveWindow ?: continue
-                    val clicked2 = clickNotInterestedMenuItem(freshRoot)
-                    if (clicked2) {
+                    var freshRoot = svc.rootInActiveWindow
+                    var clickedNotInterested = if (freshRoot != null) clickNotInterestedMenuItem(freshRoot) else false
+
+                    if (!clickedNotInterested) {
+                        delay(50) // Micro fallback check
+                        freshRoot = svc.rootInActiveWindow
+                        if (freshRoot != null) {
+                            clickedNotInterested = clickNotInterestedMenuItem(freshRoot)
+                        }
+                    }
+
+                    if (clickedNotInterested) {
                         actionsThisSweep++
-                        Log.d(TAG, "HomeFeedSweeper: ✓ Not Interested applied (${actionsThisSweep}/$MAX_SWEEP_ACTIONS)")
-                        delay(250) // Give YouTube time to dismiss the menu
+                        Log.i(TAG, "HomeFeedSweeper: ✓ 'Not Interested' executed in <150ms (${actionsThisSweep}/$MAX_SWEEP_ACTIONS)")
+                        delay(100) // Brief dismissal settling
                     } else {
-                        // If menu item wasn't found, press Back to close menu
+                        // Dismiss menu if item wasn't found
                         svc.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK)
-                        delay(150)
+                        delay(60)
                     }
                 }
             }
 
-            delay(100) // Small spacing between actions
+            delay(80)
         }
 
-        // Limit memory footprint of swept IDs
         if (lastSweptIds.size > 200) {
             val toRemove = lastSweptIds.take(100)
             lastSweptIds.removeAll(toRemove.toSet())
         }
 
-        if (actionsThisSweep > 0) {
-            Log.i(TAG, "HomeFeedSweeper: Sweep complete — $actionsThisSweep junk cards marked Not Interested")
-        }
+        return actionsThisSweep
     }
 
     private fun isJunkContent(title: String): Boolean {
         val lower = title.lowercase()
         return HOME_JUNK_TERMS.any { lower.contains(it) } ||
-            ReelExtractor.CLICKBAIT_PATTERNS.any { it.containsMatchIn(title) }
+                ReelExtractor.CLICKBAIT_PATTERNS.any { it.containsMatchIn(title) }
     }
 
-    /**
-     * Walks up the accessibility tree to find the card-level container.
-     * We need this to locate the overflow button relative to the card.
-     */
     private fun findParentCard(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         var current: AccessibilityNodeInfo? = node.parent
         var depth = 0
         while (current != null && depth < 5) {
-            // Look for a container that has multiple children (a real card layout)
             if (current.childCount >= 2) return current
             current = current.parent
             depth++
@@ -194,13 +195,10 @@ object HomeFeedSweeper {
                 if (btn != null) return btn
             } catch (_: Exception) {}
         }
-
-        // Fallback: find by content description
-        return findByContentDescription(container, listOf("more", "options", "menu", "overflow"))
+        return findByContentDescription(container, listOf("more options", "action menu", "more actions", "options", "menu", "overflow"))
     }
 
     private fun clickNotInterestedMenuItem(root: AccessibilityNodeInfo): Boolean {
-        // Find by text
         for (term in NOT_INTERESTED_TERMS) {
             try {
                 val nodes = root.findAccessibilityNodeInfosByText(term)
@@ -210,8 +208,6 @@ object HomeFeedSweeper {
                 }
             } catch (_: Exception) {}
         }
-
-        // Fallback: find any clickable node whose text contains "not interest"
         return findAndClickByText(root, "not interest")
     }
 

@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
@@ -14,6 +16,8 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.TextView
+import android.widget.Toast
 import com.feedtrainer.R
 import com.feedtrainer.ui.MainActivity
 import kotlin.math.abs
@@ -52,6 +56,7 @@ class FloatingWidgetService : Service() {
 
     private var windowManager: WindowManager? = null
     private var floatingView: View? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -65,7 +70,8 @@ class FloatingWidgetService : Service() {
         try {
             windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
             val inflater = LayoutInflater.from(this)
-            floatingView = inflater.inflate(R.layout.layout_floating_widget, null)
+            val root = inflater.inflate(R.layout.layout_floating_widget, null)
+            floatingView = root
 
             val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -87,10 +93,45 @@ class FloatingWidgetService : Service() {
                 y = 300
             }
 
-            setupTouchListener(floatingView!!, params)
-            windowManager?.addView(floatingView, params)
+            val cardBubble = root.findViewById<View>(R.id.cardBubble)
+            setupBubbleTouchListener(cardBubble, params)
+
+            // Setup Clean Home Feed Quick Action button
+            val btnCleanHome = root.findViewById<View>(R.id.btnQuickCleanHome)
+            val tvLabel = root.findViewById<TextView>(R.id.tvCleanPillLabel)
+            val tvIcon = root.findViewById<TextView>(R.id.tvCleanPillIcon)
+
+            btnCleanHome.setOnClickListener {
+                val service = FeedTrainerService.instance
+                if (service == null) {
+                    Toast.makeText(this, "FeedTrainer Service not active — tap bubble to open app", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                tvLabel.text = "Sweeping…"
+                tvIcon.text = "⚡"
+
+                service.triggerManualHomeSweep { count ->
+                    mainHandler.post {
+                        if (count > 0) {
+                            tvLabel.text = "Swept $count!"
+                            tvIcon.text = "✓"
+                        } else {
+                            tvLabel.text = "Feed Clean"
+                            tvIcon.text = "✓"
+                        }
+
+                        mainHandler.postDelayed({
+                            tvLabel.text = "Clean Home"
+                            tvIcon.text = "🧹"
+                        }, 2500L)
+                    }
+                }
+            }
+
+            windowManager?.addView(root, params)
             isRunning = true
-            Log.i(TAG, "FloatingWidgetService started with circular widget on screen")
+            Log.i(TAG, "FloatingWidgetService started with Clean Home Feed quick action")
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing floating widget overlay", e)
             stopSelf()
@@ -98,13 +139,13 @@ class FloatingWidgetService : Service() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun setupTouchListener(view: View, params: WindowManager.LayoutParams) {
+    private fun setupBubbleTouchListener(bubbleView: View, params: WindowManager.LayoutParams) {
         var initialX = 0
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
 
-        view.setOnTouchListener { v, event ->
+        bubbleView.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = params.x
@@ -118,9 +159,7 @@ class FloatingWidgetService : Service() {
                     params.y = initialY + (event.rawY - initialTouchY).toInt()
                     try {
                         windowManager?.updateViewLayout(floatingView, params)
-                    } catch (e: Exception) {
-                        // View may be detached
-                    }
+                    } catch (_: Exception) {}
                     true
                 }
                 MotionEvent.ACTION_UP -> {
@@ -155,9 +194,7 @@ class FloatingWidgetService : Service() {
         floatingView?.let {
             try {
                 windowManager?.removeView(it)
-            } catch (e: Exception) {
-                // View might not be attached
-            }
+            } catch (_: Exception) {}
             floatingView = null
         }
         Log.i(TAG, "FloatingWidgetService destroyed and widget removed")

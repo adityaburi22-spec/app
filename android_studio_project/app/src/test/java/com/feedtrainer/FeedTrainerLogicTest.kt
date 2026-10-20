@@ -299,4 +299,59 @@ class FeedTrainerLogicTest {
         val errorMsg = (result as com.feedtrainer.network.SupabaseClient.AuthResult.Error).message
         assertTrue("Error message must direct user to website", errorMsg.contains("website", ignoreCase = true))
     }
+
+    @Test
+    fun testDashboardTimeframes() {
+        val h24 = com.feedtrainer.model.DashboardTimeframe.H24
+        val h48 = com.feedtrainer.model.DashboardTimeframe.H48
+        val d7 = com.feedtrainer.model.DashboardTimeframe.D7
+        val d30 = com.feedtrainer.model.DashboardTimeframe.D30
+        val all = com.feedtrainer.model.DashboardTimeframe.ALL
+
+        assertEquals(24, h24.hours)
+        assertEquals(48, h48.hours)
+        assertEquals(7 * 24, d7.hours)
+        assertEquals(30 * 24, d30.hours)
+        assertEquals("24H", h24.label)
+        assertEquals("48H", h48.label)
+        assertEquals("7D", d7.label)
+        assertEquals("30D", d30.label)
+        assertEquals("All", all.label)
+    }
+
+    @Test
+    fun testNightstandSeedQueriesConfigured() {
+        val seedMap = com.feedtrainer.service.NightstandCalibrator.SEED_QUERIES_BY_GOAL
+        assertNotNull(seedMap)
+        assertTrue(seedMap.containsKey("Coding, AI, and Software Engineering"))
+        assertTrue(seedMap.containsKey("Science, Tech & Mathematics"))
+        assertTrue(seedMap.containsKey("Gym, Fitness, and Nutrition"))
+        assertTrue(seedMap.containsKey("Investing, Stocks, and Business"))
+        assertTrue(seedMap.containsKey("Books, Deep Work, and Mindset"))
+
+        for ((goal, queries) in seedMap) {
+            assertTrue("Queries for $goal must not be empty", queries.isNotEmpty())
+            for (query in queries) {
+                assertTrue("Query must have length > 5", query.length > 5)
+            }
+        }
+    }
+
+    @Test
+    fun testDashboardMetricsModel() {
+        val metrics = com.feedtrainer.model.DashboardMetrics(
+            totalClassified = 100,
+            highSignalCount = 78,
+            slopSuppressedCount = 22,
+            currentPurityPercent = 78,
+            initialPurityPercent = 14,
+            shiftDeltaPercent = 64,
+            nicheBreakdown = mapOf("Coding, AI, and Software Engineering" to 55, "Gym, Fitness, and Nutrition" to 23)
+        )
+        assertEquals(100, metrics.totalClassified)
+        assertEquals(78, metrics.highSignalCount)
+        assertEquals(22, metrics.slopSuppressedCount)
+        assertEquals(64, metrics.shiftDeltaPercent)
+        assertEquals(55, metrics.nicheBreakdown["Coding, AI, and Software Engineering"])
+    }
 }

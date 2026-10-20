@@ -3,8 +3,11 @@ package com.feedtrainer.service
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Context
+import android.content.Intent
 import android.graphics.Path
+import android.net.Uri
 import android.util.Log
+import android.view.accessibility.AccessibilityNodeInfo
 import com.feedtrainer.data.AppPreferences
 import com.feedtrainer.data.ChannelMemoryStore
 import com.feedtrainer.data.FeedPurityTracker
@@ -19,55 +22,61 @@ import kotlinx.coroutines.launch
 /**
  * NightstandCalibrator — "Ghost Training" Feed Calibration Session
  *
- * When triggered (manually or on charger plug-in), runs a 5–10 minute automated
- * "ghost training" session that:
- * 1. Uses YouTube's search inside the Shorts feed via accessibility automation
- * 2. Watches 15 seconds of top-tier goal-aligned seed videos
- * 3. Likes them to train the YouTube recommendation algorithm
- * 4. Fast-swipes junk videos to send negative signals
+ * Runs an automated 5-to-10 minute calibration session that:
+ * 1. Launches YouTube search with seed queries matching the user's specific goals
+ * 2. Opens top-tier high-signal videos and watches them for 15 seconds
+ * 3. Likes them to prime YouTube's recommendation algorithm weights
+ * 4. Fast-swipes junk videos
  *
- * After this session, YouTube's Home and Shorts feeds are measurably transformed.
- * The user sees a pre-trained feed the moment they pick up their phone.
- *
- * NOTE: This operates non-destructively. If the user interacts with their phone
- * during calibration, the session immediately pauses and yields control.
+ * Yields immediately if user interacts or presses Stop.
  */
 object NightstandCalibrator {
 
     private const val TAG = "NightstandCalibrator"
-    const val CALIBRATION_SESSION_DURATION_MS = 7 * 60 * 1000L // 7 minutes
-    const val VIDEO_WATCH_DURATION_MS = 15_000L // 15 seconds per target video
-    const val JUNK_SWIPE_DELAY_MS = 1_800L    // swipe junk away fast
+    const val CALIBRATION_SESSION_DURATION_MS = 8 * 60 * 1000L // 8 minutes max
+    const val VIDEO_WATCH_DURATION_MS = 15_000L // 15 seconds per seed video
+    const val JUNK_SWIPE_DELAY_MS = 1_500L
 
-    // Seed search queries per niche (paired with goal labels)
-    private val SEED_QUERIES_BY_GOAL = mapOf(
+    val SEED_QUERIES_BY_GOAL = mapOf(
         "Coding, AI, and Software Engineering" to listOf(
-            "how FlashAttention works transformer", "python data structures tutorial",
-            "system design microservices explained", "LeetCode dynamic programming tutorial",
-            "machine learning gradient descent explained", "kubernetes docker deployment"
+            "FlashAttention transformer explained",
+            "system design microservices architecture",
+            "LeetCode dynamic programming tutorial",
+            "python data structures and algorithms",
+            "machine learning gradient descent intuition",
+            "kubernetes docker deployment tutorial"
         ),
         "Science, Tech & Mathematics" to listOf(
-            "quantum computing explained simply", "CRISPR gene editing breakthrough",
-            "nasa james webb telescope discoveries", "linear algebra for machine learning"
+            "quantum computing explained simply",
+            "CRISPR gene editing breakthrough science",
+            "james webb space telescope discoveries",
+            "3blue1brown linear algebra intuition"
         ),
         "Gym, Fitness, and Nutrition" to listOf(
-            "progressive overload training guide", "high protein meal prep bodybuilding",
-            "proper bench press form hypertrophy", "squat mechanics explained"
+            "progressive overload hypertrophy guide",
+            "high protein meal prep bodybuilding",
+            "proper bench press squat form",
+            "muscle building science Jeff Nippard"
         ),
         "Investing, Stocks, and Business" to listOf(
-            "compound interest investing explained", "value investing warren buffett principles",
-            "startup fundraising series a explained", "how to read balance sheet investing"
+            "value investing warren buffett principles",
+            "how to read balance sheet and income statement",
+            "compound interest index funds investing",
+            "startup fundraising unit economics"
         ),
         "Books, Deep Work, and Mindset" to listOf(
-            "atomic habits james clear summary", "deep work cal newport focus techniques",
-            "stoicism daily practices marcus aurelius", "flow state deliberate practice"
+            "atomic habits james clear book summary",
+            "deep work cal newport focus rules",
+            "stoic philosophy daily practices",
+            "dopamine detox neuroplasticity focus"
         )
     )
 
-    // Minimal fallback seed if no goals are set
     private val DEFAULT_SEED_QUERIES = listOf(
-        "best programming tutorials", "science breakthroughs explained",
-        "fitness motivation workout tips", "investing for beginners"
+        "python programming tutorial",
+        "science breakthroughs explained",
+        "hypertrophy fitness workout guide",
+        "investing index funds explained"
     )
 
     @Volatile
@@ -85,12 +94,6 @@ object NightstandCalibrator {
     private var calibrationJob: Job? = null
     private val calibrationScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
-    /**
-     * Starts the calibration session.
-     * @param svc The running FeedTrainerService (AccessibilityService context)
-     * @param prefs User preferences
-     * @param onComplete Callback when session completes or aborts
-     */
     fun start(
         svc: AccessibilityService,
         prefs: AppPreferences,
@@ -98,14 +101,14 @@ object NightstandCalibrator {
         onComplete: (videosLiked: Int, junkSwiped: Int) -> Unit
     ) {
         if (isRunning) {
-            Log.w(TAG, "Calibration already running, ignoring start request")
+            Log.w(TAG, "Calibration already active")
             return
         }
 
         isRunning = true
         prefs.isCalibrationRunning = true
         progressPercent = 0
-        statusMessage = "Starting calibration session…"
+        statusMessage = "Starting Ghost Training session…"
 
         calibrationJob = calibrationScope.launch {
             var videosLiked = 0
@@ -114,84 +117,114 @@ object NightstandCalibrator {
 
             try {
                 val goals = prefs.goals
-                val allSeedQueries = goals.flatMap { goal ->
-                    SEED_QUERIES_BY_GOAL[goal] ?: emptyList()
-                }.ifEmpty { DEFAULT_SEED_QUERIES }.shuffled()
+                val selectedQueries = mutableListOf<Pair<String, String>>() // Pair(query, goal)
 
-                val totalQueries = allSeedQueries.size.coerceAtMost(8)
+                if (goals.isEmpty()) {
+                    DEFAULT_SEED_QUERIES.forEach { selectedQueries.add(it to "General") }
+                } else {
+                    for (goal in goals) {
+                        val queries = SEED_QUERIES_BY_GOAL[goal] ?: emptyList()
+                        queries.shuffled().take(2).forEach { q ->
+                            selectedQueries.add(q to goal)
+                        }
+                    }
+                }
 
-                for ((index, query) in allSeedQueries.take(totalQueries).withIndex()) {
+                val targetList = selectedQueries.shuffled().take(8)
+                val totalQueries = targetList.size.coerceAtLeast(1)
+
+                for ((index, item) in targetList.withIndex()) {
                     if (!isRunning) break
 
                     val elapsedMs = System.currentTimeMillis() - sessionStartMs
                     if (elapsedMs >= CALIBRATION_SESSION_DURATION_MS) break
 
+                    val (query, goalCategory) = item
                     progressPercent = ((index.toFloat() / totalQueries) * 100).toInt()
-                    statusMessage = "Searching: \"${query.take(35)}…\""
-                    Log.d(TAG, "[$index/$totalQueries] Seed query: $query")
+                    statusMessage = "Calibrating: \"${query.take(28)}…\""
+                    Log.d(TAG, "[$index/$totalQueries] Executing YouTube seed query: $query (Goal: $goalCategory)")
 
-                    // Check if accessibility service is still active
-                    val root = svc.rootInActiveWindow
-                    if (root == null) {
-                        Log.w(TAG, "Root window unavailable — pausing calibration")
-                        delay(3000)
+                    // 1. Launch real YouTube search intent for seed query
+                    launchYouTubeSearch(svc, query)
+                    delay(3500) // Wait for search results to render
+
+                    if (!isRunning) break
+
+                    val searchRoot = svc.rootInActiveWindow
+                    if (searchRoot == null) {
+                        delay(2000)
                         continue
                     }
 
-                    // Record intent signal in purity tracker (high-signal seeds)
-                    FeedPurityTracker.record(svc.applicationContext, isHighSignal = true)
+                    // 2. Click the top video result
+                    val clickedFirstVideo = clickTopSearchResult(searchRoot)
+                    if (clickedFirstVideo) {
+                        statusMessage = "Watching high-signal video (15s)…"
+                        Log.d(TAG, "Watching seed video for 15s to establish recommendation affinity")
 
-                    // Simulate like action on accessible like nodes in current visible Shorts
-                    val isShorts = ReelExtractor.isShortsActive(root)
-                    if (isShorts) {
-                        val reel = ReelExtractor.extract(root, "com.google.android.youtube", svc.resources.displayMetrics.heightPixels)
-                        if (reel != null) {
-                            val classification = FeedBrain.classify(reel, goals, channelMemory)
-                            if (classification.decision == "LIKE") {
-                                val acted = ActionExecutor.maybeAct(svc, root, "LIKE", classification.matchedGoal, prefs)
-                                if (acted) {
-                                    videosLiked++
-                                    channelMemory.recordPositiveLike(reel.channelHandle.ifBlank { reel.username })
-                                    prefs.addActivityLog(
-                                        ActivityLogItem(
-                                            platform = "YouTube [Calibration]",
-                                            username = reel.username,
-                                            captionSnippet = reel.caption.take(80),
-                                            action = "LIKED",
-                                            matchedGoal = classification.matchedGoal
-                                        )
+                        // Watch for 15 seconds (genuine watch-time signal)
+                        delay(VIDEO_WATCH_DURATION_MS)
+
+                        if (!isRunning) break
+
+                        // 3. Execute Like action
+                        val videoRoot = svc.rootInActiveWindow
+                        if (videoRoot != null) {
+                            val liked = clickLikeButton(svc, videoRoot)
+                            if (liked) {
+                                videosLiked++
+                                FeedPurityTracker.record(
+                                    svc.applicationContext,
+                                    isHighSignal = true,
+                                    category = goalCategory
+                                )
+                                prefs.addActivityLog(
+                                    ActivityLogItem(
+                                        platform = "YouTube [Calibration]",
+                                        username = "YouTube Search",
+                                        captionSnippet = "[Ghost Training] $query",
+                                        action = "LIKED",
+                                        matchedGoal = goalCategory
                                     )
-                                    statusMessage = "✓ Liked goal-aligned video ($videosLiked total)"
-                                    delay(VIDEO_WATCH_DURATION_MS) // Watch 15 seconds
-                                } else {
-                                    // Junk — swipe fast
-                                    junkSwiped++
-                                    swipeUpFast(svc)
-                                    FeedPurityTracker.record(svc.applicationContext, isHighSignal = false)
-                                    delay(JUNK_SWIPE_DELAY_MS)
-                                }
-                            } else {
-                                // Classified as junk — fast swipe
-                                junkSwiped++
-                                swipeUpFast(svc)
-                                FeedPurityTracker.record(svc.applicationContext, isHighSignal = false)
-                                delay(JUNK_SWIPE_DELAY_MS)
+                                )
+                                statusMessage = "✓ Liked high-signal video ($videosLiked total)"
+                                Log.i(TAG, "✓ Seed video liked successfully")
                             }
-                        } else {
-                            delay(3000)
                         }
                     } else {
-                        delay(5000) // Wait for Shorts to appear
+                        // If in Shorts feed, run dwell & like
+                        val isShorts = ReelExtractor.isShortsActive(searchRoot)
+                        if (isShorts) {
+                            val reel = ReelExtractor.extract(searchRoot, "com.google.android.youtube", svc.resources.displayMetrics.heightPixels)
+                            if (reel != null) {
+                                val classification = FeedBrain.classify(reel, goals, channelMemory)
+                                if (classification.decision == "LIKE") {
+                                    val acted = ActionExecutor.maybeAct(svc, searchRoot, "LIKE", classification.matchedGoal, prefs)
+                                    if (acted) {
+                                        videosLiked++
+                                        FeedPurityTracker.record(svc.applicationContext, isHighSignal = true, category = classification.matchedGoal ?: goalCategory)
+                                        delay(VIDEO_WATCH_DURATION_MS)
+                                    }
+                                } else {
+                                    junkSwiped++
+                                    swipeUpFast(svc)
+                                    FeedPurityTracker.record(svc.applicationContext, isHighSignal = false, category = "Brainrot")
+                                    delay(JUNK_SWIPE_DELAY_MS)
+                                }
+                            }
+                        }
                     }
+
+                    delay(1200)
                 }
 
                 progressPercent = 100
-                statusMessage = "✓ Calibration complete! $videosLiked high-signal videos liked, $junkSwiped junk swiped."
-                Log.i(TAG, "Calibration session complete: liked=$videosLiked, junkSwiped=$junkSwiped")
+                statusMessage = "✓ Calibration complete! $videosLiked videos primed, algorithm rewired."
+                Log.i(TAG, "Ghost Training session finished: liked=$videosLiked, junkSwiped=$junkSwiped")
 
             } catch (e: Exception) {
                 Log.e(TAG, "Calibration error", e)
-                statusMessage = "Calibration interrupted: ${e.message}"
+                statusMessage = "Calibration ended: ${e.message}"
             } finally {
                 isRunning = false
                 prefs.isCalibrationRunning = false
@@ -209,10 +242,85 @@ object NightstandCalibrator {
         Log.i(TAG, "Calibration stopped by user")
     }
 
-    /**
-     * Performs a fast upward swipe to skip a junk video.
-     * Uses real gesture dispatching (fine for non-user-input automation).
-     */
+    private fun launchYouTubeSearch(svc: AccessibilityService, query: String) {
+        try {
+            val encoded = Uri.encode(query)
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/results?search_query=$encoded")).apply {
+                setPackage("com.google.android.youtube")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            svc.startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error launching YouTube search intent", e)
+        }
+    }
+
+    private fun clickTopSearchResult(root: AccessibilityNodeInfo): Boolean {
+        // Try common YouTube search result video container IDs
+        val videoIds = listOf(
+            "com.google.android.youtube:id/thumbnail",
+            "com.google.android.youtube:id/video_title",
+            "com.google.android.youtube:id/title",
+            "com.google.android.youtube:id/compact_video_title"
+        )
+        for (id in videoIds) {
+            try {
+                val nodes = root.findAccessibilityNodeInfosByViewId(id)
+                for (node in nodes) {
+                    if (node.isClickable) {
+                        return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    }
+                    var parent = node.parent
+                    while (parent != null) {
+                        if (parent.isClickable) {
+                            return parent.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                        }
+                        parent = parent.parent
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+        return false
+    }
+
+    private fun clickLikeButton(svc: AccessibilityService, root: AccessibilityNodeInfo): Boolean {
+        val likeIds = listOf(
+            "com.google.android.youtube:id/like_button",
+            "com.google.android.youtube:id/segmented_like_button",
+            "com.google.android.youtube:id/like_button_view"
+        )
+        for (id in likeIds) {
+            try {
+                val nodes = root.findAccessibilityNodeInfosByViewId(id)
+                val btn = nodes.firstOrNull { it.isClickable || it.isEnabled }
+                if (btn != null) {
+                    return btn.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                }
+            } catch (_: Exception) {}
+        }
+
+        // Fallback: search by contentDescription
+        val descTerms = listOf("like this video", "like", "j'aime", "mag ich")
+        for (term in descTerms) {
+            val node = findByContentDesc(root, term)
+            if (node != null && node.isClickable) {
+                return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            }
+        }
+        return false
+    }
+
+    private fun findByContentDesc(node: AccessibilityNodeInfo, term: String): AccessibilityNodeInfo? {
+        val desc = node.contentDescription?.toString()?.lowercase() ?: ""
+        if (desc.contains(term)) return node
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            val found = findByContentDesc(child, term)
+            if (found != null) return found
+        }
+        return null
+    }
+
     private fun swipeUpFast(svc: AccessibilityService) {
         try {
             val metrics = svc.resources.displayMetrics
@@ -225,12 +333,12 @@ object NightstandCalibrator {
                 lineTo(cx, endY)
             }
             val gesture = GestureDescription.Builder()
-                .addStroke(GestureDescription.StrokeDescription(path, 0L, 300L))
+                .addStroke(GestureDescription.StrokeDescription(path, 0L, 280L))
                 .build()
 
             svc.dispatchGesture(gesture, null, null)
         } catch (e: Exception) {
-            Log.e(TAG, "Error dispatching swipe gesture", e)
+            Log.e(TAG, "Error dispatching swipe", e)
         }
     }
 }
