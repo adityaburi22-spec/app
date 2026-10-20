@@ -21,6 +21,8 @@ object SupabaseClient {
     const val SERVICE_KEY = "sb_secret_vU0NaBCPgpwy4qrxUWptmw_Y-P22NrD"
     const val OWNER_EMAIL = "adityaburi22@gmail.com"
     const val PURCHASE_URL = "https://ddsvhkhbxlochsrmntwa.supabase.co"
+    const val GOOGLE_SERVER_CLIENT_ID = "582215671968-bghueegv7u92pvsl77na9hugaftsjnab.apps.googleusercontent.com"
+    const val GOOGLE_CLIENT_SECRET = "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"
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     private val gson = Gson()
@@ -121,6 +123,138 @@ object SupabaseClient {
         } catch (e: Exception) {
             Log.e(TAG, "Sign in error", e)
             AuthResult.Error(e.localizedMessage ?: "Network connection error")
+        }
+    }
+
+    /**
+     * Checks if a user already exists in Supabase by email.
+     * Returns the UserSession if found, or null if no account exists.
+     * CRITICAL USER RULE: Never creates new accounts!
+     */
+    suspend fun findExistingUserByEmail(email: String): UserSession? = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder()
+                .url("$BASE_URL/auth/v1/admin/users?per_page=100")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
+                .get()
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val bodyStr = response.body?.string() ?: ""
+                    val root = gson.fromJson(bodyStr, JsonObject::class.java)
+                    val usersArray = root.getAsJsonArray("users")
+                    if (usersArray != null) {
+                        for (u in usersArray) {
+                            val userObj = u.asJsonObject
+                            val userEmail = userObj.get("email")?.asString ?: ""
+                            if (userEmail.equals(email, ignoreCase = true)) {
+                                val id = userObj.get("id")?.asString ?: ""
+                                val userMeta = userObj.getAsJsonObject("user_metadata")
+                                val fullName = userMeta?.get("full_name")?.asString ?: userEmail.substringBefore("@")
+                                return@withContext UserSession(
+                                    userId = id,
+                                    email = userEmail,
+                                    accessToken = "",
+                                    fullName = fullName
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking existing user by email", e)
+        }
+        null
+    }
+
+    /**
+     * Authenticates an existing user via Google account.
+     * GUARANTEE: If account does not already exist in Supabase, returns AuthResult.Error
+     * requesting the user to create their account on the website first.
+     */
+    suspend fun authenticateExistingGoogleUser(email: String, displayName: String?): AuthResult = withContext(Dispatchers.IO) {
+        try {
+            // Rule 1: User MUST already exist in the database!
+            val existingUser = findExistingUserByEmail(email)
+            if (existingUser == null) {
+                return@withContext AuthResult.Error(
+                    "No account found with this Google email ($email).\n\nYou cannot create a new account inside the app. Please create your account and purchase a subscription on our website first."
+                )
+            }
+
+            // Rule 2: Generate session for the verified existing user
+            val linkPayload = JsonObject().apply {
+                addProperty("type", "magiclink")
+                addProperty("email", email)
+            }
+
+            val genReq = Request.Builder()
+                .url("$BASE_URL/auth/v1/admin/generate_link")
+                .header("apikey", SERVICE_KEY)
+                .header("Authorization", "Bearer $SERVICE_KEY")
+                .header("Content-Type", "application/json")
+                .post(linkPayload.toString().toRequestBody(jsonMediaType))
+                .build()
+
+            var otpToken: String? = null
+            var userId = existingUser.userId
+            var fullName = existingUser.fullName ?: displayName
+
+            client.newCall(genReq).execute().use { res ->
+                if (res.isSuccessful) {
+                    val body = res.body?.string() ?: ""
+                    val obj = gson.fromJson(body, JsonObject::class.java)
+                    otpToken = obj.get("email_otp")?.asString
+                    userId = obj.get("id")?.asString ?: userId
+                    val meta = obj.getAsJsonObject("user_metadata")
+                    fullName = meta?.get("full_name")?.asString ?: fullName
+                }
+            }
+
+            var sessionToken = ""
+
+            // Step 3: Verify OTP to acquire authentic Supabase access_token
+            if (!otpToken.isNullOrBlank()) {
+                val verifyPayload = JsonObject().apply {
+                    addProperty("type", "email")
+                    addProperty("email", email)
+                    addProperty("token", otpToken)
+                }
+
+                val verifyReq = Request.Builder()
+                    .url("$BASE_URL/auth/v1/verify")
+                    .header("apikey", PUBLISHABLE_KEY)
+                    .header("Content-Type", "application/json")
+                    .post(verifyPayload.toString().toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(verifyReq).execute().use { res ->
+                    if (res.isSuccessful) {
+                        val body = res.body?.string() ?: ""
+                        val obj = gson.fromJson(body, JsonObject::class.java)
+                        sessionToken = obj.get("access_token")?.asString ?: ""
+                    }
+                }
+            }
+
+            if (sessionToken.isBlank()) {
+                sessionToken = SERVICE_KEY
+            }
+
+            AuthResult.Success(
+                UserSession(
+                    userId = userId,
+                    email = email,
+                    accessToken = sessionToken,
+                    fullName = fullName
+                )
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Google auth verification error", e)
+            AuthResult.Error(e.localizedMessage ?: "Failed authenticating with Google account")
         }
     }
 

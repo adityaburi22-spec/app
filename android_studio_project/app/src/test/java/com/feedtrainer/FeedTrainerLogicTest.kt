@@ -278,4 +278,25 @@ class FeedTrainerLogicTest {
         assertTrue(com.feedtrainer.service.ReelExtractor.matchesClickbaitRegex(clickbaitTitle2))
         org.junit.Assert.assertFalse(com.feedtrainer.service.ReelExtractor.matchesClickbaitRegex(legitimateTitle))
     }
+
+    @Test
+    fun testGoogleClientIdConfiguration() {
+        assertEquals(
+            "582215671968-bghueegv7u92pvsl77na9hugaftsjnab.apps.googleusercontent.com",
+            com.feedtrainer.network.SupabaseClient.GOOGLE_SERVER_CLIENT_ID
+        )
+        assertEquals(
+            "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",
+            com.feedtrainer.network.SupabaseClient.GOOGLE_CLIENT_SECRET
+        )
+    }
+
+    @Test
+    fun testGoogleLoginNonExistentUserRejected() = kotlinx.coroutines.runBlocking {
+        val nonExistentEmail = "random_unregistered_${System.currentTimeMillis()}@gmail.com"
+        val result = com.feedtrainer.network.SupabaseClient.authenticateExistingGoogleUser(nonExistentEmail, "Test User")
+        assertTrue("Non-existent user must be rejected", result is com.feedtrainer.network.SupabaseClient.AuthResult.Error)
+        val errorMsg = (result as com.feedtrainer.network.SupabaseClient.AuthResult.Error).message
+        assertTrue("Error message must direct user to website", errorMsg.contains("website", ignoreCase = true))
+    }
 }
