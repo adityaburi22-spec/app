@@ -9,13 +9,17 @@ object ReelExtractor {
         "com.instagram.android:id/clips_username",
         "com.instagram.android:id/reel_feed_username",
         "com.instagram.android:id/row_feed_photo_profile_name",
-        "com.instagram.android:id/clips_author_container"
+        "com.instagram.android:id/clips_author_container",
+        "com.instagram.android:id/primary_label"
     )
 
     private val IG_CAPTION_IDS = listOf(
         "com.instagram.android:id/clips_caption",
-        "com.instagram.android:id/reel_feed_caption",
-        "com.instagram.android:id/row_feed_comment_textview_layout"
+        "com.instagram.android:id/clips_video_caption",
+        "com.instagram.android:id/caption_text",
+        "com.instagram.android:id/reel_viewer_subtitle",
+        "com.instagram.android:id/row_feed_comment_textview_layout",
+        "com.instagram.android:id/secondary_label"
     )
 
     private val YT_USERNAME_IDS = listOf(
@@ -30,6 +34,13 @@ object ReelExtractor {
         "com.google.android.youtube:id/reel_player_title"
     )
 
+    private val IGNORED_UI_TEXTS = setOf(
+        "like", "liked", "comment", "share", "send", "save", "saved", "more",
+        "more options", "audio", "original audio", "follow", "following",
+        "sponsored", "double tap to like", "double tap to play",
+        "double tap to pause", "remix this reel", "watch again", "subscribe"
+    )
+
     fun extract(root: AccessibilityNodeInfo, pkg: String): Reel? {
         val isIG = pkg == "com.instagram.android"
         val userIds = if (isIG) IG_USERNAME_IDS else YT_USERNAME_IDS
@@ -39,6 +50,13 @@ object ReelExtractor {
         val caption = firstTextByIds(root, capIds)
 
         val raw = collectVisibleText(root)
+            .filter { text ->
+                val lower = text.lowercase()
+                !IGNORED_UI_TEXTS.contains(lower) &&
+                !lower.startsWith("double tap") &&
+                !lower.startsWith("reel by")
+            }
+
         if (username.isNullOrBlank() && caption.isNullOrBlank() && raw.isEmpty()) {
             return null
         }
@@ -48,7 +66,7 @@ object ReelExtractor {
             ?: if (isIG) "instagram_creator" else "youtube_creator"
 
         val resolvedCaption = caption
-            ?: raw.maxByOrNull { it.length }
+            ?: raw.filter { it.length > 10 }.maxByOrNull { it.length }
             ?: ""
 
         if (resolvedCaption.isBlank() && raw.size < 2) {

@@ -20,7 +20,7 @@ object FeedBrain {
     private var activeGoals: List<String> = emptyList()
     private var goalVecs: Array<FloatArray> = emptyArray()
 
-    private const val LIKE_T = 0.45f
+    private const val LIKE_T = 0.58f
     private const val NI_T = 0.20f
 
     @Volatile
@@ -161,7 +161,16 @@ object FeedBrain {
         }
 
         return try {
-            val queryText = "${reel.username}. ${reel.caption}".take(512)
+            val translatedCaption = if (com.feedtrainer.util.Translator.isLikelyNonEnglish(reel.caption)) {
+                com.feedtrainer.util.Translator.translateToEnglish(reel.caption)
+            } else {
+                ""
+            }
+            val queryText = if (translatedCaption.isNotEmpty()) {
+                "${reel.username}. ${reel.caption}. $translatedCaption".take(512)
+            } else {
+                "${reel.username}. ${reel.caption}".take(512)
+            }
             val v = embed(queryText)
 
             var bestScore = -1f

@@ -144,6 +144,32 @@ class FeedTrainerLogicTest {
     }
 
     @Test
+    fun testSpanishCodingReelClassification_ShouldReturnLike() {
+        val reel = Reel(
+            username = "dev_espanol",
+            caption = "Aprende programación en Python y cómo entrenar tu propio modelo de inteligencia artificial",
+            raw = listOf("dev_espanol", "Aprende programación"),
+            pkg = "com.google.android.youtube"
+        )
+        val result = MockLocalFilter.classify(reel, userGoals)
+        assertEquals("LIKE", result.decision)
+        assertEquals("Coding, AI, and Software Engineering", result.matchedGoal)
+    }
+
+    @Test
+    fun testHindiFitnessReelClassification_ShouldReturnLike() {
+        val reel = Reel(
+            username = "desifit",
+            caption = "बॉडीबिल्डिंग और जिम कसरत के लिए सर्वश्रेष्ठ प्रोटीन डाइट टिप्स",
+            raw = listOf("desifit", "बॉडीबिल्डिंग कसरत"),
+            pkg = "com.instagram.android"
+        )
+        val result = MockLocalFilter.classify(reel, userGoals)
+        assertEquals("LIKE", result.decision)
+        assertEquals("Gym, Fitness, and Nutrition", result.matchedGoal)
+    }
+
+    @Test
     fun testFounderLifetimeAccessPolicy() {
         assertEquals("adityaburi22@gmail.com", com.feedtrainer.network.SupabaseClient.OWNER_EMAIL)
     }

@@ -2,6 +2,7 @@ package com.feedtrainer.service
 
 import com.feedtrainer.model.ClassificationResult
 import com.feedtrainer.model.Reel
+import com.feedtrainer.util.Translator
 
 object MockLocalFilter {
 
@@ -28,40 +29,73 @@ object MockLocalFilter {
         "sigma", "rizz", "skibidi", "brainrot", "viral", "meme", "trend"
     )
 
+    // Expanded with multilingual terms (Spanish, Hindi/Hinglish, French, German, Russian, Portuguese)
     private val GOAL_KEYWORD_MAP = mapOf(
         "Coding, AI, and Software Engineering" to listOf(
             "code", "coding", "programmer", "developer", "software", "python", "javascript",
             "kotlin", "java", "react", "ai", "machine learning", "neural", "llm", "deep learning",
             "github", "backend", "frontend", "algo", "algorithm", "leetcode", "tech", "computer science",
             "pytorch", "tensorflow", "transformer", "model training", "dataset", "deployment",
-            "api", "database", "system design", "microservice", "docker", "kubernetes"
+            "api", "database", "system design", "microservice", "docker", "kubernetes",
+            // Multilingual:
+            "programacion", "programación", "código", "desarrollo", "desarrollador",
+            "développeur", "programmation", "informatique",
+            "कोडिंग", "प्रोग्रामिंग", "सॉफ्टवेयर", "डेवलपर",
+            "разработка", "программирование", "кодинг", "программист"
         ),
         "Science, Tech & Mathematics" to listOf(
             "science", "physics", "quantum", "math", "mathematics", "calculus", "astronomy",
             "space", "engineering", "biology", "chemistry", "neuroscience", "robotics", "invention",
-            "research", "experiment", "hypothesis", "discovery", "theory", "simulation"
+            "research", "experiment", "hypothesis", "discovery", "theory", "simulation",
+            // Multilingual:
+            "ciencia", "física", "matemáticas", "astronomía", "química", "robótica",
+            "nauka", "physique", "chimie", "sciences",
+            "विज्ञान", "भौतिकी", "गणित", "खगोल",
+            "наука", "физика", "математика", "космос"
         ),
         "Gym, Fitness, and Nutrition" to listOf(
             "gym", "fitness", "workout", "muscle", "hypertrophy", "bodybuilding", "protein",
             "exercise", "strength", "lifting", "squat", "bench", "deadlift", "diet", "nutrition",
-            "calisthenics", "mobility", "cardio", "health", "training", "form", "macros",
-            "calories", "cut", "bulk", "progressive overload", "recovery", "sleep recovery"
+            "calisthenics", "mobility", "cardio", "health", "training", "macros",
+            "calories", "progressive overload", "sleep recovery",
+            // Multilingual:
+            "gimnasio", "ejercicio", "musculación", "entrenamiento", "pesas",
+            "musculation", "muscles", "santé",
+            "जिम", "कसरत", "व्यायाम", "बॉडीबिल्डिंग", "फिटनेस",
+            "фитнес", "тренировка", "мышцы", "бодибилдинг", "спортзал"
         ),
         "Investing, Stocks, and Business" to listOf(
             "investing", "stocks", "finance", "money", "business", "entrepreneur", "startup",
             "wealth", "real estate", "passive income", "revenue", "sales", "crypto", "bitcoin",
-            "economy", "market", "portfolio", "dividend", "cash flow", "valuation", "compound"
+            "economy", "market", "portfolio", "dividend", "cash flow", "valuation", "compound",
+            // Multilingual:
+            "inversión", "inversiones", "finanzas", "dinero", "negocios", "bolsa",
+            "argent", "finances", "bourse", "investissement",
+            "निवेश", "शेयर बाजार", "व्यापार", "पैसे", "फाइनेंस",
+            "инвестиции", "акции", "бизнес", "деньги", "финансы"
         ),
         "Books, Deep Work, and Mindset" to listOf(
-            "book", "reading", "deep work", "productivity", "focus", "discipline", "habits",
+            "book", "reading", "deep work", "productivity", "discipline", "habits",
             "mindset", "stoic", "stoicism", "philosophy", "psychology", "learning", "study",
             "morning routine", "self-improvement", "journaling", "meditation", "atomic habits",
-            "flow state", "deliberate practice", "ikigai", "resilience"
+            "flow state", "deliberate practice", "ikigai", "resilience",
+            // Multilingual:
+            "libros", "lectura", "productividad", "disciplina", "filosofía", "estoicismo",
+            "livres", "lecture", "productivité",
+            "किताबें", "पढ़ाई", "अनुशासन", "ध्यान", "चिंतन",
+            "книги", "чтение", "продуктивность", "дисциплина", "философия", "стоицизм"
         )
     )
 
     fun classify(reel: Reel, userGoals: List<String>): ClassificationResult {
-        val text = "${reel.username} ${reel.caption} ${reel.raw.joinToString(" ")}".lowercase()
+        // Translate non-English captions to English for consistent matching
+        val translatedCaption = if (Translator.isLikelyNonEnglish(reel.caption)) {
+            Translator.translateToEnglish(reel.caption)
+        } else {
+            ""
+        }
+
+        val text = "${reel.username} ${reel.caption} $translatedCaption".lowercase()
 
         // 1. Hard-block check — runs before anything else
         if (HARD_BLOCK_TERMS.any { text.contains(it) }) {
@@ -72,7 +106,7 @@ object MockLocalFilter {
         var bestGoal: String? = null
         var maxHits = 0
 
-        val words = text.split(Regex("[^a-z0-9_#]+")).toSet()
+        val words = text.split(Regex("[^\\p{L}0-9_#]+")).filter { it.length > 2 }.toSet()
 
         for (goal in userGoals) {
             val keywords = GOAL_KEYWORD_MAP[goal] ?: goal.lowercase().split(",", " ", "&", "-")
@@ -88,19 +122,19 @@ object MockLocalFilter {
             }
         }
 
-        // 3. Check junk keywords — need 2+ hits with no goal hits to block
+        // 3. Check junk keywords
         val junkHits = DEFAULT_JUNK_KEYWORDS.count { kw ->
             if (kw.contains(" ")) text.contains(kw) else words.contains(kw)
         }
 
         return when {
-            // Need 2+ goal hits AND more goal hits than junk hits to LIKE
+            // Strong match: 2+ goal keywords and more than junk hits
             maxHits >= 2 && maxHits >= junkHits -> {
-                val score = 0.5f + (maxHits * 0.08f).coerceAtMost(0.45f)
+                val score = 0.55f + (maxHits * 0.08f).coerceAtMost(0.40f)
                 ClassificationResult("LIKE", score, bestGoal)
             }
-            // Single goal hit still qualifies if there are zero junk signals
-            maxHits == 1 && junkHits == 0 -> {
+            // Single goal hit requires 0 junk hits and at least 4 letters in keyword
+            maxHits == 1 && junkHits == 0 && words.any { it.length >= 4 } -> {
                 ClassificationResult("LIKE", 0.52f, bestGoal)
             }
             junkHits >= 1 && maxHits == 0 -> {

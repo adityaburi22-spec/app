@@ -44,6 +44,14 @@ class AppPreferences(context: Context) {
         get() = prefs.getBoolean("auto_like_enabled", true)
         set(value) = prefs.edit().putBoolean("auto_like_enabled", value).apply()
 
+    var isLikeNotificationEnabled: Boolean
+        get() = prefs.getBoolean("like_notification_enabled", false) // DISABLED BY DEFAULT per user request
+        set(value) = prefs.edit().putBoolean("like_notification_enabled", value).apply()
+
+    var isFloatingWidgetEnabled: Boolean
+        get() = prefs.getBoolean("floating_widget_enabled", false)
+        set(value) = prefs.edit().putBoolean("floating_widget_enabled", value).apply()
+
     var dailyLikeCap: Int
         get() = prefs.getInt("daily_like_cap", 40)
         set(value) = prefs.edit().putInt("daily_like_cap", value).apply()

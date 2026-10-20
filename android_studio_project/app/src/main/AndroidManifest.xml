@@ -13,6 +13,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:name=".FeedTrainerApp"
@@ -72,6 +73,11 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="On-device feed curation requested by the user" />
         </service>
+
+        <!-- Floating circle widget on screen -->
+        <service
+            android:name=".service.FloatingWidgetService"
+            android:exported="false" />
 
         <!-- Boot and unlock receiver to resume persistence -->
         <receiver

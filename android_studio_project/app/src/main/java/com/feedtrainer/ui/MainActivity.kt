@@ -3,6 +3,7 @@ package com.feedtrainer.ui
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.view.LayoutInflater
@@ -48,6 +49,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvStatDailyCap: TextView
 
     private lateinit var switchAutoLike: SwitchCompat
+    private lateinit var switchLikeToast: SwitchCompat
+    private lateinit var switchFloatingWidget: SwitchCompat
+    private lateinit var tvFloatingWidgetSubtitle: TextView
     private lateinit var tvGoalsList: TextView
     private lateinit var btnCustomizeGoals: MaterialButton
 
@@ -133,6 +137,9 @@ class MainActivity : AppCompatActivity() {
         tvStatDailyCap = findViewById(R.id.tvStatDailyCap)
 
         switchAutoLike = findViewById(R.id.switchAutoLike)
+        switchLikeToast = findViewById(R.id.switchLikeToast)
+        switchFloatingWidget = findViewById(R.id.switchFloatingWidget)
+        tvFloatingWidgetSubtitle = findViewById(R.id.tvFloatingWidgetSubtitle)
         tvGoalsList = findViewById(R.id.tvGoalsList)
         btnCustomizeGoals = findViewById(R.id.btnCustomizeGoals)
 
@@ -173,6 +180,46 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
+        switchLikeToast.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isLikeNotificationEnabled = isChecked
+            Toast.makeText(
+                this,
+                if (isChecked) "Like pop-up notifications enabled" else "Like pop-up notifications disabled (silent mode)",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        switchFloatingWidget.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                if (!Settings.canDrawOverlays(this)) {
+                    switchFloatingWidget.isChecked = false
+                    Toast.makeText(
+                        this,
+                        "Please allow 'Display over other apps' to enable the floating circle widget",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    try {
+                        val intent = Intent(
+                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:$packageName")
+                        )
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        // Fallback generic overlay settings
+                        startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION))
+                    }
+                } else {
+                    prefs.isFloatingWidgetEnabled = true
+                    com.feedtrainer.service.FloatingWidgetService.start(this)
+                    updateDashboard()
+                }
+            } else {
+                prefs.isFloatingWidgetEnabled = false
+                com.feedtrainer.service.FloatingWidgetService.stop(this)
+                updateDashboard()
+            }
+        }
+
         btnCustomizeGoals.setOnClickListener {
             showGoalCustomizationDialog()
         }
@@ -189,8 +236,8 @@ class MainActivity : AppCompatActivity() {
             viewServiceDot.setBackgroundResource(R.drawable.dot_green)
             tvServiceStatusTitle.text = "Steering Engine: Active"
             tvServiceStatusDesc.text = "FeedTrainer is actively monitoring Instagram Reels & YouTube Shorts to curate your feed."
-            btnEnableService.text = "Active"
-            btnEnableService.isEnabled = false
+            btnEnableService.text = "Settings"
+            btnEnableService.isEnabled = true
         } else {
             viewServiceDot.setBackgroundResource(R.drawable.dot_red)
             tvServiceStatusTitle.text = "Accessibility Service: Off"
@@ -204,9 +251,9 @@ class MainActivity : AppCompatActivity() {
         val isExempt = OemKeepAliveHelper.isIgnoringBatteryOptimizations(this)
         tvOemTitle.text = "Anti-Kill Shield ($oemName)"
         if (isExempt) {
-            tvOemSubtitle.text = "✓ Battery exemption active. KeepAlive foreground service is running."
+            tvOemSubtitle.text = "✓ Battery exemption active. Tap to adjust OEM autostart."
         } else {
-            tvOemSubtitle.text = "⚠️ Battery optimization is active. Tap Settings to prevent $oemName from killing the background service."
+            tvOemSubtitle.text = "⚠️ Battery optimization is active. Tap to prevent $oemName from killing the background service."
         }
 
         // 3. Stats
@@ -214,10 +261,28 @@ class MainActivity : AppCompatActivity() {
         tvStatSteered.text = prefs.totalReelsSteered.toString()
         tvStatDailyCap.text = "${prefs.actionsToday} / ${prefs.dailyLikeCap}"
 
-        // 4. Switch
+        // 4. Switches
         switchAutoLike.isChecked = prefs.isAutoLikeEnabled
+        switchLikeToast.isChecked = prefs.isLikeNotificationEnabled
 
-        // 5. Goals
+        // 5. Floating widget
+        val canOverlay = Settings.canDrawOverlays(this)
+        switchFloatingWidget.isChecked = canOverlay && prefs.isFloatingWidgetEnabled
+        if (canOverlay && prefs.isFloatingWidgetEnabled) {
+            tvFloatingWidgetSubtitle.text = "✓ Floating circle active on screen (drag anywhere)"
+            tvFloatingWidgetSubtitle.setTextColor(getColor(R.color.status_green))
+            if (!com.feedtrainer.service.FloatingWidgetService.isRunning) {
+                com.feedtrainer.service.FloatingWidgetService.start(this)
+            }
+        } else if (!canOverlay) {
+            tvFloatingWidgetSubtitle.text = "Requires 'Display over other apps' permission"
+            tvFloatingWidgetSubtitle.setTextColor(getColor(R.color.status_yellow))
+        } else {
+            tvFloatingWidgetSubtitle.text = "Always-on small circle widget with app logo"
+            tvFloatingWidgetSubtitle.setTextColor(getColor(R.color.text_muted))
+        }
+
+        // 6. Goals
         val goals = prefs.goals
         tvGoalsList.text = goals.joinToString("\n") { "• $it" }
 

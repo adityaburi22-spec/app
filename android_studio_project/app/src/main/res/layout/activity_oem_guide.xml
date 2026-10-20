@@ -312,6 +312,18 @@
                     android:textColor="#4B6580"
                     android:textSize="12sp"
                     android:lineSpacingExtra="3dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStep3AppDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:text="Open FeedTrainer App Info &amp; Permissions"
+                    android:textSize="13sp"
+                    android:textColor="#FFFFFF"
+                    android:fontFamily="sans-serif-medium"
+                    android:layout_marginTop="14dp"
+                    app:backgroundTint="#6366F1"
+                    app:cornerRadius="23dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 

@@ -15,6 +15,7 @@ class OemGuideActivity : AppCompatActivity() {
     private lateinit var tvOemInstructions: TextView
     private lateinit var btnGrantBattery: MaterialButton
     private lateinit var btnOpenAutostart: MaterialButton
+    private lateinit var btnStep3AppDetails: MaterialButton
     private lateinit var btnDoneOem: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +27,7 @@ class OemGuideActivity : AppCompatActivity() {
         tvOemInstructions = findViewById(R.id.tvOemInstructions)
         btnGrantBattery = findViewById(R.id.btnGrantBattery)
         btnOpenAutostart = findViewById(R.id.btnOpenAutostart)
+        btnStep3AppDetails = findViewById(R.id.btnStep3AppDetails)
         btnDoneOem = findViewById(R.id.btnDoneOem)
 
         tvDetectedBrand.text = "Device Detected: ${OemKeepAliveHelper.getOemNameFormatted()}"
@@ -45,6 +47,17 @@ class OemGuideActivity : AppCompatActivity() {
                     "Please open your phone's Settings > Apps > Autostart manually",
                     Toast.LENGTH_LONG
                 ).show()
+            }
+        }
+
+        btnStep3AppDetails.setOnClickListener {
+            try {
+                val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = android.net.Uri.parse("package:$packageName")
+                }
+                startActivity(intent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Could not open App Info", Toast.LENGTH_SHORT).show()
             }
         }
 
