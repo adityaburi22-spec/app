@@ -1,13 +1,20 @@
 package com.feedtrainer.util
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
+import com.feedtrainer.R
 import com.feedtrainer.model.AppReleaseUpdate
+import com.feedtrainer.ui.MainActivity
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +31,13 @@ object AppUpdateManager {
     private const val GITHUB_REPO = "adityaburi22-spec/app"
     private const val GITHUB_TOKEN = "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"
     private const val RELEASES_API = "https://api.github.com/repos/$GITHUB_REPO/releases/latest"
+
+    const val CHANNEL_ID_UPDATES = "feedtrainer_app_updates"
+    const val NOTIFICATION_ID_UPDATE = 9001
+    const val EXTRA_START_UPDATE = "EXTRA_START_UPDATE"
+    const val EXTRA_UPDATE_TAG = "EXTRA_UPDATE_TAG"
+    const val EXTRA_UPDATE_URL = "EXTRA_UPDATE_URL"
+    const val EXTRA_UPDATE_NOTES = "EXTRA_UPDATE_NOTES"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
@@ -194,6 +208,63 @@ object AppUpdateManager {
             context.startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Failed launching package installer", e)
+        }
+    }
+
+    /**
+     * Posts a system notification to inform the user of an update.
+     * Tapping notification or action opens MainActivity and triggers the update install dialog.
+     */
+    fun showUpdateNotification(context: Context, update: AppReleaseUpdate) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID_UPDATES,
+                    "App Updates",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Notifications for new FeedTrainer app releases and updates"
+                    enableLights(true)
+                    enableVibration(true)
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+
+            val launchIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra(EXTRA_START_UPDATE, true)
+                putExtra(EXTRA_UPDATE_TAG, update.tagName)
+                putExtra(EXTRA_UPDATE_URL, update.downloadUrl)
+                putExtra(EXTRA_UPDATE_NOTES, update.releaseNotes)
+            }
+
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+
+            val pendingIntent = PendingIntent.getActivity(context, 101, launchIntent, flags)
+
+            val notesPreview = update.releaseNotes.lines().filter { it.isNotBlank() }.take(3).joinToString("\n")
+
+            val notification = NotificationCompat.Builder(context, CHANNEL_ID_UPDATES)
+                .setSmallIcon(R.drawable.feedtrainer_logo)
+                .setContentTitle("⚡ Update Available: ${update.tagName}")
+                .setContentText("Tap to download and install FeedTrainer ${update.tagName}")
+                .setStyle(NotificationCompat.BigTextStyle().bigText("A new version of FeedTrainer is available:\n$notesPreview\n\nTap to download and install now."))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .addAction(R.drawable.feedtrainer_logo, "Install Update", pendingIntent)
+                .build()
+
+            notificationManager.notify(NOTIFICATION_ID_UPDATE, notification)
+            Log.i(TAG, "Sent update notification for release ${update.tagName}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed sending update notification", e)
         }
     }
 }

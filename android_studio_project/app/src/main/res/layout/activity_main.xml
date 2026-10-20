@@ -70,6 +70,73 @@
                 android:paddingEnd="14dp" />
         </LinearLayout>
 
+        <!-- ══════════════════ PROMINENT UPDATE BANNER (SHOWN WHEN UPDATE IS AVAILABLE) ══════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardUpdateBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="3dp"
+            app:cardBackgroundColor="@color/status_green_bg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⚡"
+                    android:textSize="24sp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:id="@+id/tvBannerUpdateTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="New Update Available!"
+                        android:textColor="@color/brand_dark"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvBannerUpdateSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tap to install latest version with new features"
+                        android:textColor="@color/brand_text_muted"
+                        android:textSize="11sp"
+                        android:layout_marginTop="1dp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnBannerUpdateNow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="Update Now"
+                    android:textSize="12sp"
+                    android:textColor="@color/white"
+                    android:fontFamily="sans-serif-medium"
+                    app:backgroundTint="@color/brand_moss"
+                    app:cornerRadius="19dp" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
         <!-- ══════════════════ HERO STATUS CARD ══════════════════ -->
         <androidx.cardview.widget.CardView
             android:id="@+id/cardAccessibility"

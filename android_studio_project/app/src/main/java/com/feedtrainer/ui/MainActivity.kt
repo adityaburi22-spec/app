@@ -98,6 +98,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chartFeedPurity: FeedPurityChartView
     private lateinit var tvPurityBadge: TextView
 
+    // Top update banner views
+    private lateinit var cardUpdateBanner: View
+    private lateinit var tvBannerUpdateTitle: TextView
+    private lateinit var tvBannerUpdateSubtitle: TextView
+    private lateinit var btnBannerUpdateNow: MaterialButton
+
     private var isUpdatePromptActive = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,6 +117,31 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupListeners()
         updateDashboard()
+        handleUpdateIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUpdateIntent(intent)
+    }
+
+    private fun handleUpdateIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(AppUpdateManager.EXTRA_START_UPDATE, false) == true) {
+            val tag = intent.getStringExtra(AppUpdateManager.EXTRA_UPDATE_TAG) ?: ""
+            val url = intent.getStringExtra(AppUpdateManager.EXTRA_UPDATE_URL) ?: ""
+            val notes = intent.getStringExtra(AppUpdateManager.EXTRA_UPDATE_NOTES) ?: ""
+            if (url.isNotBlank()) {
+                val update = AppReleaseUpdate(
+                    tagName = tag,
+                    versionName = tag,
+                    releaseNotes = notes,
+                    downloadUrl = url,
+                    isMandatory = true
+                )
+                showUpdateModal(update)
+            }
+        }
     }
 
     override fun onResume() {
@@ -211,6 +242,12 @@ class MainActivity : AppCompatActivity() {
         progressCalibration = findViewById(R.id.progressCalibration)
         chartFeedPurity = findViewById(R.id.chartFeedPurity)
         tvPurityBadge = findViewById(R.id.tvPurityBadge)
+
+        // Top update banner
+        cardUpdateBanner = findViewById(R.id.cardUpdateBanner)
+        tvBannerUpdateTitle = findViewById(R.id.tvBannerUpdateTitle)
+        tvBannerUpdateSubtitle = findViewById(R.id.tvBannerUpdateSubtitle)
+        btnBannerUpdateNow = findViewById(R.id.btnBannerUpdateNow)
     }
 
     private fun setupListeners() {
@@ -687,22 +724,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkForMandatoryUpdate(silent: Boolean) {
-        if (isUpdatePromptActive) return
-
         lifecycleScope.launch {
             if (!silent) {
                 Toast.makeText(this@MainActivity, "Checking for latest update...", Toast.LENGTH_SHORT).show()
             }
             val update = AppUpdateManager.checkForUpdate(BuildConfig.VERSION_NAME)
             if (update != null) {
-                showUpdateModal(update)
-            } else if (!silent) {
-                Toast.makeText(this@MainActivity, "FeedTrainer is up to date (v${BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+                // 1. Show prominent update banner right at top of dashboard
+                cardUpdateBanner.visibility = View.VISIBLE
+                tvBannerUpdateTitle.text = "⚡ Update Available: ${update.tagName}"
+                tvBannerUpdateSubtitle.text = "FeedTrainer ${update.tagName} is ready to install"
+                btnBannerUpdateNow.setOnClickListener {
+                    showUpdateModal(update)
+                }
+
+                // 2. Post Android system notification (tap directly opens install dialog)
+                AppUpdateManager.showUpdateNotification(this@MainActivity, update)
+
+                // 3. Show update modal if not already active
+                if (!isUpdatePromptActive) {
+                    showUpdateModal(update)
+                }
+            } else {
+                cardUpdateBanner.visibility = View.GONE
+                if (!silent) {
+                    Toast.makeText(this@MainActivity, "FeedTrainer is up to date (v${BuildConfig.VERSION_NAME})", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
 
     private fun showUpdateModal(update: AppReleaseUpdate) {
+        if (isUpdatePromptActive) return
         isUpdatePromptActive = true
 
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_mandatory_update, null)
@@ -712,16 +765,22 @@ class MainActivity : AppCompatActivity() {
         val progressBar = dialogView.findViewById<ProgressBar>(R.id.progressUpdateDownload)
         val tvStatus = dialogView.findViewById<TextView>(R.id.tvDownloadStatus)
         val btnStart = dialogView.findViewById<MaterialButton>(R.id.btnStartUpdate)
+        val btnClose = dialogView.findViewById<MaterialButton>(R.id.btnCloseUpdateDialog)
 
-        tvVersion.text = "Update Available: ${update.tagName}"
+        tvVersion.text = "Version ${update.tagName} Available"
         tvNotes.text = update.releaseNotes
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
-            .setCancelable(false) // Mandatory per user request
+            .setCancelable(true)
+            .setOnDismissListener { isUpdatePromptActive = false }
             .create()
 
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
 
         btnStart.setOnClickListener {
             btnStart.isEnabled = false
