@@ -206,4 +206,44 @@ class FeedTrainerLogicTest {
     fun testFounderLifetimeAccessPolicy() {
         assertEquals("adityaburi22@gmail.com", com.feedtrainer.network.SupabaseClient.OWNER_EMAIL)
     }
+
+    @Test
+    fun testContrastiveNicheSlop_ShouldReturnNotInterested() {
+        val slopReel = Reel(
+            username = "hustle_guru",
+            caption = "5 Secret AI websites that feel illegal to know! Make $10k/month passive income with ChatGPT",
+            raw = listOf("hustle_guru", "5 Secret AI websites that feel illegal to know!"),
+            pkg = "com.google.android.youtube"
+        )
+        val result = MockLocalFilter.classify(slopReel, userGoals)
+        assertEquals("NOT_INTERESTED", result.decision)
+        assertTrue(result.rejectionReason?.contains("Slop") == true || result.score <= 0.2f)
+    }
+
+    @Test
+    fun testClickbaitRegexTrap_ShouldReturnNotInterested() {
+        val clickbaitReel = Reel(
+            username = "random_shorts",
+            caption = "Python coding trick wait till the end 99% fail this interview question",
+            raw = listOf("random_shorts", "Python coding trick wait till the end"),
+            pkg = "com.google.android.youtube"
+        )
+        val result = MockLocalFilter.classify(clickbaitReel, userGoals)
+        assertEquals("NOT_INTERESTED", result.decision)
+        assertTrue(result.rejectionReason?.contains("Clickbait") == true || result.score <= 0.2f)
+    }
+
+    @Test
+    fun testSubtitlesTruthSerum_ShouldReturnLikeEvenWithVagueTitle() {
+        val vagueTitleReel = Reel(
+            username = "engineer_mike",
+            caption = "Crazy tech breakdown",
+            subtitles = "In this breakdown we look at how FlashAttention-2 optimizes GPU SRAM and PyTorch CUDA kernels",
+            raw = listOf("engineer_mike", "Crazy tech breakdown"),
+            pkg = "com.google.android.youtube"
+        )
+        val result = MockLocalFilter.classify(vagueTitleReel, userGoals)
+        assertEquals("LIKE", result.decision)
+        assertEquals("Coding, AI, and Software Engineering", result.matchedGoal)
+    }
 }

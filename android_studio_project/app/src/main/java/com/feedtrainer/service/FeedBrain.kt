@@ -5,6 +5,7 @@ import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
 import android.content.Context
 import android.util.Log
+import com.feedtrainer.data.ChannelMemoryStore
 import com.feedtrainer.model.ClassificationResult
 import com.feedtrainer.model.Reel
 import com.feedtrainer.util.Translator
@@ -19,7 +20,8 @@ object FeedBrain {
     private var tokenizer: ai.djl.huggingface.tokenizers.HuggingFaceTokenizer? = null
 
     private var activeGoals: List<String> = emptyList()
-    private var goalVecs: Array<FloatArray> = emptyArray()
+    private var targetVecs: Array<FloatArray> = emptyArray()
+    private var slopVecs: Array<FloatArray> = emptyArray()
 
     private const val LIKE_T = 0.44f
     private const val NI_T = 0.20f
@@ -27,6 +29,34 @@ object FeedBrain {
     @Volatile
     var isInitialized: Boolean = false
         private set
+
+    // Deep High-Signal Target Anchors (V_Target)
+    private val TARGET_ANCHOR_PROMPTS = mapOf(
+        "Coding, AI, and Software Engineering" to
+            "High-signal software engineering tutorial, system architecture breakdown, CUDA SRAM GPU memory optimization, compiler internals, low-level Linux performance, algorithm design, distributed consensus, data structures, real production code deployment, genuine AI research paper analysis.",
+        "Science, Tech & Mathematics" to
+            "Rigorous mathematics proofs, quantum mechanics concepts, calculus derivations, astrophysics observations, biochemistry experimental data, robotics kinematics, space propulsion engineering, scientific method inquiry.",
+        "Gym, Fitness, and Nutrition" to
+            "Evidence-based hypertrophy mechanics, biomechanics analysis, progressive overload technique, human anatomy, exercise physiology, macronutrient timing, sleep recovery science, genuine strength powerlifting mechanics.",
+        "Investing, Stocks, and Business" to
+            "Value investing fundamentals, 10-K financial statement analysis, balance sheet cash flow, corporate valuation models, macroeconomic policy, unit economics, supply chain operations, SaaS business metrics.",
+        "Books, Deep Work, and Mindset" to
+            "Deep work focus, deliberate practice systems, stoic philosophy principles, cognitive bias mitigation, habit design mechanics, academic literature synthesis, mental models for complex problem solving."
+    )
+
+    // Niche-Slop Trojan Horse Anchors (V_Slop)
+    private val SLOP_ANCHOR_PROMPTS = mapOf(
+        "Coding, AI, and Software Engineering" to
+            "5 secret AI websites that feel illegal to know, make 10000 dollars with ChatGPT overnight, copy paste prompt to get rich, no-code millionaire, secret tech hustle, AI money glitch, dark psychology tech tricks, bro thought he could code.",
+        "Science, Tech & Mathematics" to
+            "Conspiracy theories, fake science hacks, aliens finally revealed, pseudo-science tricks they hid from you, flat earth sensationalism, unbelievable shocking secret.",
+        "Gym, Fitness, and Nutrition" to
+            "Secret 7 day workout to get six pack abs fast, steroids versus natural drama, gym cringe roast, thirst trap flexing compilation, 1 weird trick to burn belly fat, ego lifting gym rage.",
+        "Investing, Stocks, and Business" to
+            "Get rich quick in 30 days, 100x crypto moonshot call, secret dropshipping website nobody talks about, passive income while you sleep easily, rented lamborghini lifestyle flex, forex signals scam.",
+        "Books, Deep Work, and Mindset" to
+            "Sigma male grindset phonk edit, wake up at 3am or you are broke, Patrick Bateman aesthetic, dark psychology manipulation secrets, alpha male motivational quotes, watch till the end emotional trap."
+    )
 
     @Synchronized
     fun init(ctx: Context, goals: List<String>) {
@@ -55,36 +85,43 @@ object FeedBrain {
                 tokenizer = ai.djl.huggingface.tokenizers.HuggingFaceTokenizer.newInstance(tokenizerFile.toPath())
             }
 
-            goalVecs = goals.mapNotNull {
-                try {
-                    embed(it)
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to embed goal: $it", e)
-                    null
-                }
-            }.toTypedArray()
+            embedAnchors(goals)
 
-            isInitialized = goalVecs.isNotEmpty()
-            Log.d(TAG, "FeedBrain initialized with ${goalVecs.size} goal vectors")
+            isInitialized = targetVecs.isNotEmpty()
+            Log.d(TAG, "FeedBrain initialized with ${targetVecs.size} contrastive dual-anchor vectors")
         } catch (e: Throwable) {
             Log.e(TAG, "FeedBrain ONNX initialization failed; falling back to MockLocalFilter", e)
             isInitialized = false
         }
     }
 
+    private fun embedAnchors(goals: List<String>) {
+        val targets = mutableListOf<FloatArray>()
+        val slops = mutableListOf<FloatArray>()
+
+        for (goal in goals) {
+            val targetPrompt = TARGET_ANCHOR_PROMPTS[goal] ?: "$goal educational breakdown deep tutorial concept architecture"
+            val slopPrompt = SLOP_ANCHOR_PROMPTS[goal] ?: "$goal get rich quick secret hack overnight scam clickbait listicle"
+
+            try {
+                targets.add(embed(targetPrompt))
+                slops.add(embed(slopPrompt))
+            } catch (e: Exception) {
+                Log.w(TAG, "Error embedding anchors for goal: $goal", e)
+            }
+        }
+
+        targetVecs = targets.toTypedArray()
+        slopVecs = slops.toTypedArray()
+    }
+
     fun updateGoals(ctx: Context, goals: List<String>) {
         activeGoals = goals
         if (isInitialized && session != null && tokenizer != null) {
             try {
-                goalVecs = goals.mapNotNull {
-                    try {
-                        embed(it)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }.toTypedArray()
+                embedAnchors(goals)
             } catch (e: Exception) {
-                Log.e(TAG, "Error updating goal vectors", e)
+                Log.e(TAG, "Error updating contrastive vectors", e)
             }
         }
     }
@@ -149,7 +186,6 @@ object FeedBrain {
         "reaction", "fanboy", "stan", "celeb drama", "tea ☕"
     )
 
-    // High-value educational intent signals (boost score)
     private val EDUCATIONAL_INTENT_SIGNALS = listOf(
         "how to", "tutorial", "explained", "deep dive", "step by step",
         "architecture", "under the hood", "best practice", "roadmap",
@@ -157,91 +193,151 @@ object FeedBrain {
         "learn", "mistakes to avoid", "pro tip", "algorithm", "tutorial for beginners"
     )
 
-    // Bait signals that penalize score
-    private val CLICKBAIT_SIGNALS = listOf(
-        "omg", "you won't believe", "wait till the end", "secret rich people",
-        "dropshipping", "100x return", "make millions", "passive income easily",
-        "literally me", "rage bait", "clout"
-    )
+    fun classify(
+        reel: Reel,
+        userGoals: List<String>,
+        channelMemory: ChannelMemoryStore? = null
+    ): ClassificationResult {
+        val handle = reel.channelHandle.ifBlank { reel.username }
+        val fullRaw = "${reel.username} ${reel.caption} ${reel.subtitles}".lowercase()
 
-    private val QUALITY_CREATOR_TOKENS = listOf("dev", "code", "coder", "tech", "eng", "learn", "science", "fit", "invest")
-    private val JUNK_CREATOR_TOKENS = listOf("meme", "viral", "clip", "tiktok", "daily", "reaction", "repost", "fun")
-
-    fun classify(reel: Reel, userGoals: List<String>): ClassificationResult {
-        val captionLower = "${reel.username} ${reel.caption}".lowercase()
-
-        // 1. HARD BLOCK: Immediate NOT_INTERESTED for brainrot / meme traps
-        if (HARD_BLOCK_TERMS.any { captionLower.contains(it) }) {
-            return ClassificationResult("NOT_INTERESTED", 0.05f, null)
+        // 1. LAYER 2: 0ms Heuristic & Clickbait Traps
+        if (HARD_BLOCK_TERMS.any { fullRaw.contains(it) }) {
+            return ClassificationResult("NOT_INTERESTED", 0.05f, null, rejectionReason = "Hard blocked term detected")
         }
 
-        if (!isInitialized || goalVecs.isEmpty()) {
-            return MockLocalFilter.classify(reel, userGoals)
+        if (ReelExtractor.matchesClickbaitRegex(reel.caption) || ReelExtractor.matchesClickbaitRegex(reel.subtitles)) {
+            Log.d(TAG, "[$handle] Blocked by 0ms Clickbait Regex Trap")
+            return ClassificationResult("NOT_INTERESTED", 0.08f, null, rejectionReason = "Clickbait Regex Trap Triggered")
+        }
+
+        // Channel Memory Check
+        if (channelMemory?.isBlacklisted(handle) == true) {
+            Log.d(TAG, "[$handle] Channel is blacklisted in local memory (3+ fast swipes / manual unlike)")
+            return ClassificationResult("NOT_INTERESTED", 0.05f, null, rejectionReason = "Channel blacklisted in local memory")
+        }
+
+        if (!isInitialized || targetVecs.isEmpty()) {
+            return MockLocalFilter.classify(reel, userGoals, channelMemory)
         }
 
         return try {
             val translatedCaption = if (Translator.isLikelyNonEnglish(reel.caption)) {
                 Translator.translateToEnglish(reel.caption)
-            } else {
-                ""
-            }
+            } else ""
 
-            val queryText = if (translatedCaption.isNotEmpty()) {
-                "${reel.username}. ${reel.caption}. $translatedCaption".take(512)
-            } else {
-                "${reel.username}. ${reel.caption}".take(512)
-            }
+            val translatedSubtitles = if (Translator.isLikelyNonEnglish(reel.subtitles)) {
+                Translator.translateToEnglish(reel.subtitles)
+            } else ""
+
+            // Combine Truth Serum: Channel + Title + Spoken Subtitles
+            val queryText = buildString {
+                append(handle)
+                append(". ")
+                append(reel.caption)
+                if (translatedCaption.isNotEmpty()) append(" ($translatedCaption)")
+                if (reel.subtitles.isNotBlank()) {
+                    append(". Subtitles: ")
+                    append(reel.subtitles.take(240))
+                    if (translatedSubtitles.isNotEmpty()) append(" ($translatedSubtitles)")
+                }
+            }.take(512)
 
             val v = embed(queryText)
 
-            var bestDot = -1f
+            var bestTargetScore = -1f
+            var bestSlopScore = -1f
             var bestGoalIndex = -1
 
-            for (i in goalVecs.indices) {
-                val g = goalVecs[i]
-                var dot = 0f
-                val len = minOf(g.size, v.size)
+            for (i in targetVecs.indices) {
+                val tVec = targetVecs[i]
+                val sVec = slopVecs[i]
+
+                var dotTarget = 0f
+                var dotSlop = 0f
+                val len = minOf(tVec.size, v.size)
+
                 for (d in 0 until len) {
-                    dot += g[d] * v[d]
+                    dotTarget += tVec[d] * v[d]
+                    dotSlop += sVec[d] * v[d]
                 }
-                if (dot > bestDot) {
-                    bestDot = dot
+
+                val netScore = dotTarget - (0.55f * dotSlop)
+                if (netScore > (bestTargetScore - (0.55f * bestSlopScore))) {
+                    bestTargetScore = dotTarget
+                    bestSlopScore = dotSlop
                     bestGoalIndex = i
                 }
             }
 
-            // Multi-Factor Adjustment
-            val fullText = "$queryText $captionLower"
-            var finalScore = bestDot
+            // Layer 3: Contrastive Vector Scoring Formula
+            // S_alignment = (w1 * V_Target) - (w2 * V_Slop) + w3 * C_channel
+            val channelScore = channelMemory?.getChannelScore(handle) ?: 0f
+            var alignmentScore = (1.0f * bestTargetScore) - (0.55f * bestSlopScore) + (0.15f * channelScore)
 
             // Educational intent boost
-            if (EDUCATIONAL_INTENT_SIGNALS.any { fullText.contains(it) }) {
-                finalScore += 0.10f
+            if (EDUCATIONAL_INTENT_SIGNALS.any { fullRaw.contains(it) }) {
+                alignmentScore += 0.08f
             }
 
-            // Clickbait penalty
-            if (CLICKBAIT_SIGNALS.any { fullText.contains(it) }) {
-                finalScore -= 0.15f
-            }
-
-            // Creator name weighting
-            val uLower = reel.username.lowercase()
-            if (QUALITY_CREATOR_TOKENS.any { uLower.contains(it) }) {
-                finalScore += 0.06f
-            } else if (JUNK_CREATOR_TOKENS.any { uLower.contains(it) }) {
-                finalScore -= 0.12f
+            // Audio track signal: Original sound boost (+0.04) vs meme audio penalty (-0.08)
+            if (reel.isOriginalAudio) {
+                alignmentScore += 0.04f
+            } else if (reel.audioTrack.lowercase().contains("phonk") || reel.audioTrack.lowercase().contains("meme")) {
+                alignmentScore -= 0.08f
             }
 
             val matchedGoal = if (bestGoalIndex in activeGoals.indices) activeGoals[bestGoalIndex] else null
 
+            // Trojan-horse slop kill: If slop score exceeds target score, reject!
+            if (bestSlopScore >= bestTargetScore && bestSlopScore > 0.40f) {
+                Log.d(TAG, "[$handle] Trojan-horse slop detected: Slop($bestSlopScore) >= Target($bestTargetScore)")
+                return ClassificationResult(
+                    decision = "NOT_INTERESTED",
+                    score = alignmentScore,
+                    matchedGoal = matchedGoal,
+                    targetScore = bestTargetScore,
+                    slopScore = bestSlopScore,
+                    channelScore = channelScore,
+                    rejectionReason = "Contrastive Slop Score Exceeded Target"
+                )
+            }
+
             when {
-                finalScore >= LIKE_T -> ClassificationResult("LIKE", finalScore, matchedGoal)
-                finalScore <= NI_T -> ClassificationResult("NOT_INTERESTED", finalScore, null)
-                else -> ClassificationResult("SKIP", finalScore, matchedGoal)
+                alignmentScore >= LIKE_T && bestTargetScore >= 0.42f -> {
+                    ClassificationResult(
+                        decision = "LIKE",
+                        score = alignmentScore,
+                        matchedGoal = matchedGoal,
+                        targetScore = bestTargetScore,
+                        slopScore = bestSlopScore,
+                        channelScore = channelScore
+                    )
+                }
+                alignmentScore <= NI_T -> {
+                    ClassificationResult(
+                        decision = "NOT_INTERESTED",
+                        score = alignmentScore,
+                        matchedGoal = null,
+                        targetScore = bestTargetScore,
+                        slopScore = bestSlopScore,
+                        channelScore = channelScore
+                    )
+                }
+                else -> {
+                    ClassificationResult(
+                        decision = "SKIP",
+                        score = alignmentScore,
+                        matchedGoal = matchedGoal,
+                        targetScore = bestTargetScore,
+                        slopScore = bestSlopScore,
+                        channelScore = channelScore
+                    )
+                }
             }
         } catch (e: Exception) {
-            Log.w(TAG, "ONNX classify error; using keyword filter fallback", e)
-            MockLocalFilter.classify(reel, userGoals)
+            Log.w(TAG, "ONNX contrastive classify error; using keyword fallback", e)
+            MockLocalFilter.classify(reel, userGoals, channelMemory)
         }
     }
 }

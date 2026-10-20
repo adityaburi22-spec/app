@@ -52,6 +52,14 @@ class AppPreferences(context: Context) {
         get() = prefs.getBoolean("like_sponsored_enabled", false) // DEFAULT FALSE per user request
         set(value) = prefs.edit().putBoolean("like_sponsored_enabled", value).apply()
 
+    var isDwellTimeGatingEnabled: Boolean
+        get() = prefs.getBoolean("dwell_time_gating_enabled", true) // DEFAULT TRUE: 4.5s dwell-gate
+        set(value) = prefs.edit().putBoolean("dwell_time_gating_enabled", value).apply()
+
+    var isMicroHudEnabled: Boolean
+        get() = prefs.getBoolean("micro_hud_enabled", true) // DEFAULT TRUE: subtle top edge pulse
+        set(value) = prefs.edit().putBoolean("micro_hud_enabled", value).apply()
+
     var isFloatingWidgetEnabled: Boolean
         get() = prefs.getBoolean("floating_widget_enabled", false)
         set(value) = prefs.edit().putBoolean("floating_widget_enabled", value).apply()

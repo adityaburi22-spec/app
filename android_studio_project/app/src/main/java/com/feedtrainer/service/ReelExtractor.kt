@@ -40,6 +40,39 @@ object ReelExtractor {
         "com.google.android.youtube:id/shorts_title"
     )
 
+    // Subtitle & Caption nodes (The Ultimate Truth Serum)
+    private val SUBTITLE_VIEW_IDS = listOf(
+        "com.google.android.youtube:id/subtitle_window",
+        "com.google.android.youtube:id/caption_text",
+        "com.google.android.youtube:id/subtitles",
+        "com.google.android.youtube:id/overlay_subtitle",
+        "com.google.android.youtube:id/closed_captions",
+        "com.google.android.youtube:id/caption_window"
+    )
+
+    // Audio & Sound Track nodes
+    private val AUDIO_TRACK_IDS = listOf(
+        "com.google.android.youtube:id/reel_sound_title",
+        "com.google.android.youtube:id/sound_track_title",
+        "com.google.android.youtube:id/music_title",
+        "com.google.android.youtube:id/reel_music_title",
+        "com.google.android.youtube:id/audio_track_button"
+    )
+
+    // Layer 2: Clickbait Regex Traps (0ms heuristic execution)
+    val CLICKBAIT_PATTERNS = listOf(
+        Regex("(?i)part\\s*\\d+\\s*(?:/|of|\\s*-\\s*)\\s*\\d+"),
+        Regex("(?i)wait\\s+(?:till|for|until)\\s+the\\s+end"),
+        Regex("(?i)(?:99%|only\\s+1%)\\s+(?:fail|can|know)"),
+        Regex("(?i)link\\s+in\\s+(?:bio|comments)"),
+        Regex("(?i)comment\\s+['\"][A-Za-z0-9]+['\"]\\s+to\\s+get"),
+        Regex("(?i)secret\\s+(?:ai\\s+)?website(?:s)?\\s+(?:they\\s+don't\\s+want|that\\s+feel\\s+illegal)"),
+        Regex("(?i)make\\s+\\$\\d+.*(?:overnight|easily|fast|in\\s+your\\s+sleep)"),
+        Regex("(?i)how\\s+to\\s+get\\s+rich\\s+(?:fast|in\\s+30\\s+days|easily)"),
+        Regex("(?i)bro\\s+thought\\s+he\\s+could"),
+        Regex("(?i)watch\\s+(?:until|till)\\s+the\\s+end")
+    )
+
     private val IGNORED_UI_TEXTS = setOf(
         "like", "liked", "comment", "share", "send", "save", "saved", "more",
         "more options", "audio", "original audio", "follow", "following",
@@ -48,11 +81,18 @@ object ReelExtractor {
     )
 
     /**
+     * Checks if the caption or raw text contains an engagement-bait trap.
+     */
+    fun matchesClickbaitRegex(text: String): Boolean {
+        if (text.isBlank()) return false
+        return CLICKBAIT_PATTERNS.any { it.containsMatchIn(text) }
+    }
+
+    /**
      * Verifies if the active window is the YouTube Shorts vertical player,
      * rejecting regular watch player, search tabs, and feed lists.
      */
     fun isShortsActive(root: AccessibilityNodeInfo): Boolean {
-        // 1. Must contain at least one Shorts-specific container
         var hasShortsContainer = false
         for (id in SHORTS_CONTAINER_IDS) {
             try {
@@ -68,12 +108,10 @@ object ReelExtractor {
             return false
         }
 
-        // 2. Reject if standard watch view containers exist without active Shorts
         for (id in STANDARD_WATCH_IDS) {
             try {
                 val nodes = root.findAccessibilityNodeInfosByViewId(id)
                 if (nodes.isNotEmpty()) {
-                    // Check if Shorts recycler exists alongside; if not, reject
                     val reelRecycler = root.findAccessibilityNodeInfosByViewId("com.google.android.youtube:id/reel_recycler")
                     if (reelRecycler.isEmpty()) {
                         return false
@@ -86,7 +124,7 @@ object ReelExtractor {
     }
 
     /**
-     * Extracts Reel from the currently active, vertically settled Shorts item.
+     * Extracts Reel with all 4 rich signals: Title, @Channel, Subtitles, and Audio Track.
      */
     fun extract(root: AccessibilityNodeInfo, pkg: String, screenHeight: Int = 2400): Reel? {
         if (!isShortsActive(root)) {
@@ -94,12 +132,14 @@ object ReelExtractor {
             return null
         }
 
-        // Find the active, vertically centered Shorts container
+        // Find active settled Shorts page
         val activeContainer = findActiveSettledPage(root, screenHeight) ?: root
 
+        // Signal 1: Channel Handle
         val username = firstTextByIds(activeContainer, YT_USERNAME_IDS)
             ?: firstTextByIds(root, YT_USERNAME_IDS)
 
+        // Signal 2: Title & Description
         val caption = firstTextByIds(activeContainer, YT_CAPTION_IDS)
             ?: firstTextByIds(root, YT_CAPTION_IDS)
 
@@ -127,6 +167,12 @@ object ReelExtractor {
             return null
         }
 
+        // Signal 3: Subtitles / Captions (Spoken transcripts)
+        val subtitles = extractSubtitles(activeContainer, root)
+
+        // Signal 4: Audio Track name
+        val audioInfo = extractAudioTrack(activeContainer, root)
+
         val isSponsored = detectSponsored(activeContainer, root)
 
         return Reel(
@@ -134,13 +180,70 @@ object ReelExtractor {
             caption = resolvedCaption,
             raw = raw,
             pkg = pkg,
-            isSponsored = isSponsored
+            isSponsored = isSponsored,
+            channelHandle = resolvedUsername,
+            subtitles = subtitles,
+            audioTrack = audioInfo.first,
+            isOriginalAudio = audioInfo.second
         )
     }
 
     /**
-     * Finds the Shorts page that is vertically centered and settled on screen.
-     * Prevents Bug 2: Returns null if user is midway through dragging/scrolling.
+     * Extracts rolling on-screen subtitle / closed caption text.
+     */
+    private fun extractSubtitles(activeContainer: AccessibilityNodeInfo, root: AccessibilityNodeInfo): String {
+        for (id in SUBTITLE_VIEW_IDS) {
+            try {
+                val nodes = activeContainer.findAccessibilityNodeInfosByViewId(id)
+                val text = nodes.joinToString(" ") { it.text?.toString() ?: "" }.trim()
+                if (text.length > 5) return text
+
+                val rootNodes = root.findAccessibilityNodeInfosByViewId(id)
+                val rootText = rootNodes.joinToString(" ") { it.text?.toString() ?: "" }.trim()
+                if (rootText.length > 5) return rootText
+            } catch (_: Exception) {}
+        }
+        return ""
+    }
+
+    /**
+     * Extracts audio track title and checks whether it's original creator sound or trending clip.
+     */
+    private fun extractAudioTrack(activeContainer: AccessibilityNodeInfo, root: AccessibilityNodeInfo): Pair<String, Boolean> {
+        var trackName = ""
+        for (id in AUDIO_TRACK_IDS) {
+            try {
+                val nodes = activeContainer.findAccessibilityNodeInfosByViewId(id)
+                val text = nodes.firstOrNull { !it.text.isNullOrBlank() }?.text?.toString()
+                if (!text.isNullOrBlank()) {
+                    trackName = text
+                    break
+                }
+                val desc = nodes.firstOrNull { !it.contentDescription.isNullOrBlank() }?.contentDescription?.toString()
+                if (!desc.isNullOrBlank()) {
+                    trackName = desc
+                    break
+                }
+            } catch (_: Exception) {}
+        }
+
+        if (trackName.isBlank()) {
+            val raw = collectVisibleText(activeContainer)
+            val audioLine = raw.firstOrNull {
+                it.startsWith("Sound -", ignoreCase = true) ||
+                it.startsWith("Original audio", ignoreCase = true) ||
+                it.startsWith("Original sound", ignoreCase = true)
+            }
+            if (audioLine != null) trackName = audioLine
+        }
+
+        val lower = trackName.lowercase()
+        val isOriginal = lower.contains("original") || lower.contains("sound - @") || trackName.isBlank()
+        return Pair(trackName, isOriginal)
+    }
+
+    /**
+     * Finds the Shorts page that is vertically centered and settled on screen (Bug 2 Fix).
      */
     private fun findActiveSettledPage(root: AccessibilityNodeInfo, screenHeight: Int): AccessibilityNodeInfo? {
         val pageNodes = root.findAccessibilityNodeInfosByViewId("com.google.android.youtube:id/reel_player_page")
@@ -153,8 +256,6 @@ object ReelExtractor {
 
         for (node in pageNodes) {
             node.getBoundsInScreen(rect)
-            // A settled Short page covers the vertical center of the screen
-            // and is snapped (top is near the top edge)
             val coversCenter = rect.top <= screenCenter && rect.bottom >= screenCenter
             val isSettled = rect.top >= -screenHeight * 0.20f && rect.top <= screenHeight * 0.20f
 

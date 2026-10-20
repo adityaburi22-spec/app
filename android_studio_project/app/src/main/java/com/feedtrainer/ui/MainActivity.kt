@@ -63,6 +63,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvAutoLikeSubtitle: TextView
     private lateinit var switchLikeSponsored: SwitchCompat
     private lateinit var tvLikeSponsoredSubtitle: TextView
+    private lateinit var switchDwellGate: SwitchCompat
+    private lateinit var switchMicroHud: SwitchCompat
     private lateinit var switchLikeToast: SwitchCompat
     private lateinit var switchFloatingWidget: SwitchCompat
     private lateinit var tvFloatingWidgetSubtitle: TextView
@@ -163,6 +165,8 @@ class MainActivity : AppCompatActivity() {
         tvAutoLikeSubtitle = findViewById(R.id.tvAutoLikeSubtitle)
         switchLikeSponsored = findViewById(R.id.switchLikeSponsored)
         tvLikeSponsoredSubtitle = findViewById(R.id.tvLikeSponsoredSubtitle)
+        switchDwellGate = findViewById(R.id.switchDwellGate)
+        switchMicroHud = findViewById(R.id.switchMicroHud)
         switchLikeToast = findViewById(R.id.switchLikeToast)
         switchFloatingWidget = findViewById(R.id.switchFloatingWidget)
         tvFloatingWidgetSubtitle = findViewById(R.id.tvFloatingWidgetSubtitle)
@@ -224,6 +228,24 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(
                 this,
                 if (isChecked) "Liking relevant sponsored shorts enabled" else "Sponsored shorts will be skipped (Default)",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        switchDwellGate.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isDwellTimeGatingEnabled = isChecked
+            Toast.makeText(
+                this,
+                if (isChecked) "Dwell-time gating active (4.6s watch required before like)" else "Dwell-time gating disabled",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        switchMicroHud.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isMicroHudEnabled = isChecked
+            Toast.makeText(
+                this,
+                if (isChecked) "Subtle edge pulse enabled" else "Subtle edge pulse disabled",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -324,6 +346,8 @@ class MainActivity : AppCompatActivity() {
         // 4. Switches
         switchAutoLike.isChecked = prefs.isAutoLikeEnabled
         switchLikeSponsored.isChecked = prefs.isLikeSponsoredEnabled
+        switchDwellGate.isChecked = prefs.isDwellTimeGatingEnabled
+        switchMicroHud.isChecked = prefs.isMicroHudEnabled
         switchLikeToast.isChecked = prefs.isLikeNotificationEnabled
 
         // 5. Floating widget
